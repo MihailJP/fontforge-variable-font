@@ -1,13 +1,13 @@
-Fontforge plugin template
-=========================
+Fontforge Variable Font Plugin
+==============================
 
-Description here
+A FontForge_plugin to create a variable font
 
 Install
 -------
 
 ```shell
-pip3 install fontforge_hello
+pip3 install fontforge_variable_font
 ```
 
 Usage
