@@ -1,3 +1,4 @@
+from fontforgeVF import design_axes
 import fontforge
 
 def loadMenu(u, glyph):
@@ -16,12 +17,8 @@ def saveEnable(u, glyph):
     return False
 
 
-def designAxesMenu(u, glyph):
-    fontforge.postNotice("This is a mockup", "Not yet implemented!")
-
-
 def designAxesEnable(u, glyph):
-    return False
+    return True
 
 
 def instanceMenu(u, glyph):
@@ -48,7 +45,7 @@ def fontforge_plugin_init(**kw):
         name="_Generate a variable font..."
     )
     fontforge.registerMenuItem(
-        callback=designAxesMenu,
+        callback=design_axes.designAxesMenu,
         enable=designAxesEnable,
         context="Font",
         submenu="_Variable Font",

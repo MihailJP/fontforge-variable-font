@@ -7,7 +7,7 @@ Install
 -------
 
 ```shell
-pip3 install fontforge_variable_font
+pip3 install fontforgeVF
 ```
 
 Usage
