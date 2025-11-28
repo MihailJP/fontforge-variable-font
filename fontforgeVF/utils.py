@@ -23,3 +23,20 @@ def initPersistentDict(font: fontforge.font) -> bool:
         font.persistent = {}
     # Do nothing if font.persistent is a dict
     return True
+
+
+def vfInfoExists(font: fontforge.font) -> bool:
+    """Check if VF info exists
+
+    Check if `font.persistent` is a `dict` and `VF` key is in it.
+
+    Returns `True` if VF info exists, `False` if not.
+    """
+    if font.persistent is None:
+        return False
+    elif not isinstance(font.persistent, dict):
+        return False
+    elif 'VF' not in font.persistent:
+        return False
+    else:
+        return True

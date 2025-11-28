@@ -1,4 +1,4 @@
-from fontforgeVF import design_axes
+from fontforgeVF import design_axes, delete
 import fontforge
 
 def loadMenu(u, glyph):
@@ -15,10 +15,6 @@ def saveMenu(u, glyph):
 
 def saveEnable(u, glyph):
     return False
-
-
-def designAxesEnable(u, glyph):
-    return True
 
 
 def instanceMenu(u, glyph):
@@ -46,7 +42,7 @@ def fontforge_plugin_init(**kw):
     )
     fontforge.registerMenuItem(
         callback=design_axes.designAxesMenu,
-        enable=designAxesEnable,
+        enable=design_axes.designAxesEnable,
         context="Font",
         submenu="_Variable Font",
         name="Design _axes..."
@@ -57,4 +53,11 @@ def fontforge_plugin_init(**kw):
         context="Font",
         submenu="_Variable Font",
         name="_Instance list..."
+    )
+    fontforge.registerMenuItem(
+        callback=delete.deleteVFInfoMenu,
+        enable=delete.deleteVFInfoEnable,
+        context="Font",
+        submenu="_Variable Font",
+        name="_Delete VF info"
     )

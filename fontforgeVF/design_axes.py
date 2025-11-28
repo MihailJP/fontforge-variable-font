@@ -14,7 +14,7 @@ designAxes = {
 
 
 def designAxesMenu(u, glyph):
-    """Interactively sets design axes for active font
+    """Menu entry to interactively set design axes for active font
 
     Opens a dialog to set design axes of active font. Requires UI.
 
@@ -104,3 +104,7 @@ def designAxesMenu(u, glyph):
 
     result = fontforge.askMulti("Design axes", questions)
     #print(result)
+
+
+def designAxesEnable(u, glyph):
+    return True
