@@ -1,5 +1,22 @@
 import fontforge
 
+def intOrFloat(val):
+    f = 0.0
+    i = 0
+    try:
+        f = float(val)
+    except ValueError:
+        return val
+    try:
+        i = int(val)
+    except ValueError:
+        return f
+    if f == i:
+        return i
+    else:
+        return f
+
+
 def initPersistentDict(font: fontforge.font):
     """Make sure ``font.persistent`` is a ``dict``
 
@@ -62,6 +79,7 @@ def getVFValue(font: fontforge.font, key: str, default=None):
     else:
         info = font.persistent["VF"]
         for k in key.split('.'):
+            k = intOrFloat(k)
             if not isinstance(info, dict):
                 return default
             elif k not in info:
@@ -86,6 +104,7 @@ def setVFValue(font: fontforge.font, key: str, val):
     initPersistentDict(font)
     info = font.persistent["VF"]
     for k in key.split('.')[:-1]:
+        k = intOrFloat(k)
         if k not in info:
             info[k] = dict()
         elif not isinstance(info[k], dict):
@@ -94,20 +113,12 @@ def setVFValue(font: fontforge.font, key: str, val):
     info[key.split('.')[-1]] = val
 
 
-def intOrFloat(val):
-    f = float(val)
-    i = int(val)
-    if f == i:
-        return i
-    else:
-        return f
-
-
 def deleteEmptyDicts(d: dict):
     """Recursively deletes empty ``dict``s in ``dict``"""
     if isinstance(d, dict):
         keys = list(d.keys())
         for k in keys:
+            k = intOrFloat(k)
             if isinstance(d[k], dict):
                 deleteEmptyDicts(d[k])
                 if len(d[k]) == 0:
@@ -129,6 +140,7 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
     if vfInfoExists(font):
         info = font.persistent["VF"]
         for k in key.split('.')[:-1]:
+            k = intOrFloat(k)
             if k not in info:
                 return False
             elif not isinstance(info[k], dict):

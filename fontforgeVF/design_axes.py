@@ -13,11 +13,44 @@ designAxes = {
 }
 
 
+def _loadLabels(tag):
+    font = fontforge.activeFont()
+    if label := utils.getVFValue(font, 'axes.' + tag + '.labels'):
+        text = ''
+        assert(isinstance(label, dict))
+        for k, v in label.items():
+            text += str(k) + ',' + \
+                ('1' if utils.getVFValue(font, 'axes.' + tag + '.labels.' + str(k) + '.elidable', False) else '0') + \
+                ',' + str(utils.getVFValue(font, 'axes.' + tag + '.labels.' + str(k) + '.linkedValue', '')) + \
+                ',' + utils.getVFValue(font, 'axes.' + tag + '.labels.' + str(k) + '.name', '') + \
+                ', '
+        return text[:-2]
+    elif tag == 'wdth':
+        return '50,,,Ultra Condensed, ' \
+            '62.5,,,Extra Condensed, ' \
+            '75,,,Condensed, ' \
+            '87.5,,,Semi-Condensed, ' \
+            '100,1,,Medium, ' \
+            '112.5,,,Semi-Expanded, ' \
+            '125,,,Expanded, ' \
+            '150,,,Extra Expanded, ' \
+            '200,,,Ultra Expanded'
+    elif tag == 'wght':
+        return '100,,,Thin, 200,,,Extra Light, 300,,,Light, ' \
+            '400,0,700,Regular, 500,,,Medium, 600,,,Semi-Bold, ' \
+            '700,,,Bold, 800,,,Extra Bold, 900,,,Black'
+    elif tag == 'ital':
+        return '0,1,1,Roman, 1,0,0,Italic'
+    else:
+        return ''
+
+
 def _prepareQuestions():
     font = fontforge.activeFont()
     questions =  [
         { 'category': 'This master', 'questions': [], },
         { 'category': 'Custom axes', 'questions': [], },
+        { 'category': 'Axis map',    'questions': [], },
         { 'category': 'Axis order',  'questions': [], },
         { 'category': 'Axis names',  'questions': [], },
     ]
@@ -76,18 +109,24 @@ def _prepareQuestions():
                 'default': str(tagVal),
             })
 
-        questions[2]["questions"].append({
+        questions[3]["questions"].append({
             'type': 'string',
             'question': v["name"] + ':',
             'tag': k + 'order',
             'default': str(utils.getVFValue(font, 'axes.' + k + '.order', '')),
         })
 
-        questions[3]["questions"].append({
+        questions[4]["questions"].append({
             'type': 'string',
             'question': v["name"] + ':',
             'tag': k + 'name',
             'default': utils.getVFValue(font, 'axes.' + k + '.name', '' if k.startswith('custom') else v["name"]),
+        })
+        questions[4]["questions"].append({
+            'type': 'string',
+            'question': '\tLabels:',
+            'tag': k + 'labels',
+            'default': _loadLabels(k),
         })
 
         for i in localNameRange:
@@ -125,6 +164,17 @@ def _saveResult(result):
         if k.startswith('custom'):
             utils.setOrDeleteVFValue(font, 'axes.' + k + '.tag', result[k + 'tag'])
         utils.setOrDeleteVFValue(font, 'axes.' + k + '.order', int(result[k + 'order']) if result[k + 'order'] else None)
+        utils.deleteVFValue(font, 'axes.' + k + '.labels')
+        if result[k + 'labels']:
+            for val, el, lv, name in \
+                list(map(lambda x: (x[0][0].strip(), x[0][1].strip(), x[1][0].strip(), x[1][1].strip()), \
+                zip(_x := zip(_x := iter(result[k + 'labels'].split(',')), _x), _x))):
+                    utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.elidable', \
+                        None if el == '' else bool(utils.intOrFloat(el)))
+                    utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.linkedValue', \
+                        None if lv == '' else utils.intOrFloat(lv))
+                    utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.name', \
+                        None if name == '' else name)
         utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
         utils.deleteVFValue(font, 'axes.' + k + '.localNames')
         for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
@@ -190,6 +240,16 @@ def designAxesMenu(u, glyph):
 
     Names the design axes. For predefined axes can use default name.
     Custom axes must be named if used.
+
+    * Axis name: name of axis itself.
+    * Labels: comma-separated list which consists of multiple of 4 of
+      elements. Leading and trailing spaces will be trimmed. Every
+      group of 4 elements:
+
+      * Axis value
+      * Whether label name is elidable (1 if so, 0 if not)
+      * Linked value if exist
+      * Name
 
     Localized names
     ---------------
