@@ -1,6 +1,6 @@
 import fontforge
 
-def initPersistentDict(font: fontforge.font) -> bool:
+def initPersistentDict(font: fontforge.font):
     """Make sure ``font.persistent`` is a ``dict``
 
     If ``font.persistent`` is a ``dict``, does nothing. Otherwise sets
@@ -10,8 +10,8 @@ def initPersistentDict(font: fontforge.font) -> bool:
     active, asks the user before deletes it. If not running
     interactively, it will be deleted without warning.
 
-    :return: ``False`` if the user refuses to delete existing
-    ``font.persistent``, ``True`` otherwise.
+    :raises ``RuntimeError``: user refused to delete existing
+    ``font.persistent``.
     """
     if font.persistent is None:
         font.persistent = {}
@@ -19,10 +19,12 @@ def initPersistentDict(font: fontforge.font) -> bool:
         fontforge.logWarning("Non-dict `font.persistent` will be lost")
         if fontforge.hasUserInterface():
             if fontforge.ask("Data loss warning", "In active font, `font.persistent` exists but is other than a dict.\nThis will be overwritten if you continue.", ("_OK", "_Cancel"), 0, 1) == 1:
-                return False
+                raise RuntimeError("user refused to delete existing `font.persistent`")
         font.persistent = {}
-    # Do nothing if font.persistent is a dict
-    return True
+    if 'VF' not in font.persistent:
+        font.persistent['VF'] = {}
+    elif not isinstance(font.persistent['VF'], dict):
+        font.persistent['VF'] = {}
 
 
 def vfInfoExists(font: fontforge.font) -> bool:
@@ -40,3 +42,119 @@ def vfInfoExists(font: fontforge.font) -> bool:
         return False
     else:
         return True
+
+
+def getVFValue(font: fontforge.font, key: str, default=None):
+    """Gets a value from VF info
+
+    Gets a value from nested ``dict`` in ``font.persistent.VF``. If
+    given key does not exist, uses default value.
+
+    :param font: Fontforge font object
+    :param key: Name of key. Use dots for nested ``dict`` like
+    ``axes.wght``.
+    :param default: Optional. Returns this value if ``key`` does not
+    exist. Without this parameter defaults to ``None``.
+    :return: the value for ``key``, or ``default`` if no such ``key``.
+    """
+    if not vfInfoExists(font):
+        return default
+    else:
+        info = font.persistent["VF"]
+        for k in key.split('.'):
+            if not isinstance(info, dict):
+                return default
+            elif k not in info:
+                return default
+            else:
+                info = info[k]
+        return info
+
+
+def setVFValue(font: fontforge.font, key: str, val):
+    """Sets a value in VF info
+
+    Sets a value in a nested ``dict`` in ``font.persistent.VF``. If
+    given key does not exist, it is recursively created.
+
+    :param font: Fontforge font object
+    :param key: Name of key. Use dots for nested ``dict`` like
+    ``axes.wght``.
+    :param val: A value to set. this can be anything picklable.
+    :raises ``RuntimeError``: user refused ``initPersistentDict``.
+    """
+    initPersistentDict(font)
+    info = font.persistent["VF"]
+    for k in key.split('.')[:-1]:
+        if k not in info:
+            info[k] = dict()
+        elif not isinstance(info[k], dict):
+            info[k] = dict()
+        info = info[k]
+    info[key.split('.')[-1]] = val
+
+
+def intOrFloat(val):
+    f = float(val)
+    i = int(val)
+    if f == i:
+        return i
+    else:
+        return f
+
+
+def deleteEmptyDicts(d: dict):
+    """Recursively deletes empty ``dict``s in ``dict``"""
+    if isinstance(d, dict):
+        keys = list(d.keys())
+        for k in keys:
+            if isinstance(d[k], dict):
+                deleteEmptyDicts(d[k])
+                if len(d[k]) == 0:
+                    del d[k]
+
+
+def deleteVFValue(font: fontforge.font, key: str) -> bool:
+    """Deletes a key and the associated value from VF info
+
+    Sets a value in a nested ``dict`` in ``font.persistent.VF``. If
+    given key does not exist, it does nothing. Resulting empty ``dict``
+    will also deleted recursively.
+
+    :param font: Fontforge font object
+    :param key: Name of key. Use dots for nested ``dict`` like
+    ``axes.wght``.
+    :return: ``True`` if the key was deleted, ``False`` otherwise.
+    """
+    if vfInfoExists(font):
+        info = font.persistent["VF"]
+        for k in key.split('.')[:-1]:
+            if k not in info:
+                return False
+            elif not isinstance(info[k], dict):
+                return False
+            info = info[k]
+        if key.split('.')[-1] in info:
+            del info[key.split('.')[-1]]
+        deleteEmptyDicts(font.persistent["VF"])
+        return True
+    else:
+        return False
+
+
+def setOrDeleteVFValue(font: fontforge.font, key: str, val):
+    """Sets or deletes a value in VF info
+
+    If ``val`` is ``None``, calls ``deleteVFValue``. Otherwise, calls
+    ``setVFValue``.
+
+    :param font: Fontforge font object
+    :param key: Name of key. Use dots for nested ``dict`` like
+    ``axes.wght``.
+    :param val: A value to set. this can be anything picklable.
+    :raises ``RuntimeError``: user refused ``initPersistentDict``.
+    """
+    if val is None:
+        deleteVFValue(font, key)
+    else:
+        setVFValue(font, key, val)

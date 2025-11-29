@@ -13,6 +13,83 @@ designAxes = {
 }
 
 
+def _prepareQuestions():
+    font = fontforge.activeFont()
+    questions =  [
+        {
+            'category': 'This master',
+            'questions': [],
+        },
+        {
+            'category': 'Custom axes',
+            'questions': [],
+        },
+    ]
+    for k, v in designAxes.items():
+        tagStat = 1 if utils.getVFValue(font, 'axes.' + k + '.active', False) else 0
+        if tagStat == 1 and not k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.useDefault', False):
+            tagStat = 2
+        defaultTagVal = v["auto"](font) if v["auto"] else 0
+        tagVal = utils.getVFValue(font, 'axes.' + k + '.value', defaultTagVal) if tagStat == 1 else defaultTagVal
+        questions[0]["questions"].append({
+            'type': 'choice',
+            'question': v["name"] + ':',
+            'tag': k,
+            'checks': True,
+            'answers': [
+                { 'name': 'Unset', 'tag': 'unset', 'default': tagStat == 0 },
+                { 'name': 'Set', 'tag': 'custom', 'default': tagStat == 1 },
+            ] + ([
+                { 'name': 'Default (' + str(v["auto"](font)) + ')', 'tag': 'auto', 'default': tagStat == 2 },
+            ] if v["auto"] else []),
+        })
+        if k == 'ital':
+            questions[0]["questions"].append({
+                'type': 'choice',
+                'question': '',
+                'tag': k + 'val',
+                'checks': True,
+                'answers': [
+                    { 'name': 'No', 'tag': 'false', 'default': not tagVal },
+                    { 'name': 'Yes', 'tag': 'true', 'default': tagVal },
+                ],
+            })
+        else:
+            questions[0]["questions"].append({
+                'type': 'string',
+                'question': '',
+                'tag': k + 'val',
+                'default': str(tagVal),
+            })
+
+        if k.startswith('custom'):
+            questions[1]["questions"].append({
+                'type': 'string',
+                'question': v["name"] + ' tag:',
+                'tag': k + 'tag',
+                'default': '',
+            })
+    return questions
+
+
+def _saveResult(result):
+    font = fontforge.activeFont()
+    for k, v in designAxes.items():
+        utils.setVFValue(font, 'axes.' + k + '.active', result[k] != 'unset')
+        if not k.startswith('custom') and result[k] != 'unset':
+            utils.setVFValue(font, 'axes.' + k + '.useDefault', result[k] == 'auto')
+        else:
+            utils.deleteVFValue(font, 'axes.' + k + '.useDefault')
+        if result[k] == 'custom':
+            utils.setVFValue(font, 'axes.' + k + '.value', result[k + 'val'] == 'true' if k == 'ital' else utils.intOrFloat(result[k + 'val']))
+        else:
+            utils.deleteVFValue(font, 'axes.' + k + '.value')
+        if k.startswith('custom'):
+            utils.setOrDeleteVFValue(font, 'axes.' + k + '.tag', result[k + 'tag'])
+    #print(result)
+    #print(font.persistent)
+
+
 def designAxesMenu(u, glyph):
     """Menu entry to interactively set design axes for active font
 
@@ -52,58 +129,9 @@ def designAxesMenu(u, glyph):
     alphanumeric. Will be padded with implicit trailing spaces. Leave
     them blank if not used.
     """
-    questions =  [
-        {
-            'category': 'This master',
-            'questions': [],
-        },
-        {
-            'category': 'Custom axes',
-            'questions': [],
-        },
-    ]
-    for k, v in designAxes.items():
-        questions[0]["questions"].append({
-            'type': 'choice',
-            'question': v["name"] + ':',
-            'tag': k,
-            'checks': True,
-            'answers': [
-                { 'name': 'Unset', 'tag': 'unset', 'default': True },
-                { 'name': 'Set', 'tag': 'custom' },
-            ] + ([
-                { 'name': 'Default (' + str(v["auto"](fontforge.activeFont())) + ')', 'tag': 'auto' },
-            ] if v["auto"] else []),
-        })
-        if k == 'ital':
-            questions[0]["questions"].append({
-                'type': 'choice',
-                'question': '',
-                'tag': k + 'val',
-                'checks': True,
-                'answers': [
-                    { 'name': 'No', 'tag': 'false', 'default': not v["auto"](fontforge.activeFont()) },
-                    { 'name': 'Yes', 'tag': 'true', 'default': v["auto"](fontforge.activeFont()) },
-                ],
-            })
-        else:
-            questions[0]["questions"].append({
-                'type': 'string',
-                'question': '',
-                'tag': k + 'val',
-                'default': str(v["auto"](fontforge.activeFont())) if v["auto"] else '0',
-            })
-
-        if k.startswith('custom'):
-            questions[1]["questions"].append({
-                'type': 'string',
-                'question': v["name"] + ' tag:',
-                'tag': k + 'tag',
-                'default': '',
-            })
-
-    result = fontforge.askMulti("Design axes", questions)
-    #print(result)
+    result = fontforge.askMulti("Design axes", _prepareQuestions())
+    if result:
+        _saveResult(result)
 
 
 def designAxesEnable(u, glyph):
