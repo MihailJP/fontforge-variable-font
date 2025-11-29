@@ -13,18 +13,26 @@ designAxes = {
 }
 
 
-def _loadLabels(tag):
+def _loadLabels(tag, lang=None):
     font = fontforge.activeFont()
-    if label := utils.getVFValue(font, 'axes.' + tag + '.labels'):
+    addr = 'axes.' + tag + '.labels'
+    if label := utils.getVFValue(font, addr):
         text = ''
         assert(isinstance(label, dict))
         for k, v in label.items():
-            text += str(k) + ',' + \
-                ('1' if utils.getVFValue(font, 'axes.' + tag + '.labels.' + str(k) + '.elidable', False) else '0') + \
-                ',' + str(utils.getVFValue(font, 'axes.' + tag + '.labels.' + str(k) + '.linkedValue', '')) + \
-                ',' + utils.getVFValue(font, 'axes.' + tag + '.labels.' + str(k) + '.name', '') + \
-                ', '
+            if lang:
+                text += str(k) + ',' + \
+                    utils.getVFValue(font, addr + '.' + str(k) + '.localNames.' + lang, '') + \
+                    ', '
+            else:
+                text += str(k) + ',' + \
+                    ('1' if utils.getVFValue(font, addr + '.' + str(k) + '.elidable', False) else '0') + \
+                    ',' + str(utils.getVFValue(font, addr + '.' + str(k) + '.linkedValue', '')) + \
+                    ',' + utils.getVFValue(font, addr + '.' + str(k) + '.name', '') + \
+                    ', '
         return text[:-2]
+    elif lang:
+        return ''
     elif tag == 'wdth':
         return '50,,,Ultra Condensed, ' \
             '62.5,,,Extra Condensed, ' \
@@ -137,6 +145,12 @@ def _prepareQuestions():
                 'default': utils.getVFValue(font, 'axes.' + k + '.localNames.' + languages[i-1], '')
                     if i <= len(languages) else '',
             })
+            questions[localNameCategory + i - 1]["questions"].append({
+                'type': 'string',
+                'question': '\tLabels:',
+                'tag': k + 'labels' + str(i),
+                'default': _loadLabels(k, languages[i-1]) if i <= len(languages) else '',
+            })
 
         if k.startswith('custom'):
             questions[1]["questions"].append({
@@ -169,18 +183,26 @@ def _saveResult(result):
             for val, el, lv, name in \
                 list(map(lambda x: (x[0][0].strip(), x[0][1].strip(), x[1][0].strip(), x[1][1].strip()), \
                 zip(_x := zip(_x := iter(result[k + 'labels'].split(',')), _x), _x))):
+                    val = val.replace('.', '\ufdd0') # escape decimal point with noncharacter
                     utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.elidable', \
                         None if el == '' else bool(utils.intOrFloat(el)))
                     utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.linkedValue', \
                         None if lv == '' else utils.intOrFloat(lv))
                     utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.name', \
                         None if name == '' else name)
+        utils.deleteVFValue(font, 'axes.' + k + '.labels.' + val + '.localNames')
+        for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
+            if result['lang' + i] and result[k + 'labels' + i]:
+                for val, name in list(zip(_x := iter(result[k + 'labels' + i].split(',')), _x)):
+                    val = val.replace('.', '\ufdd0') # escape decimal point with noncharacter
+                    utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.localNames.' + result['lang' + i],
+                        None if name == '' else name)
         utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
         utils.deleteVFValue(font, 'axes.' + k + '.localNames')
         for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
-                if result['lang' + i]:
-                    utils.setOrDeleteVFValue(font, 'axes.' + k + '.localNames.' + result['lang' + i],
-                        result[k + 'name' + i])
+            if result['lang' + i]:
+                utils.setOrDeleteVFValue(font, 'axes.' + k + '.localNames.' + result['lang' + i],
+                    result[k + 'name' + i])
     #print(result)
     #print(font.persistent)
 
@@ -263,6 +285,14 @@ def designAxesMenu(u, glyph):
 
     By default there is a room for 8 languages, but this will be
     extended if already more than 4 languages are defined.
+
+    * Axis name: name of axis itself.
+    * Labels: comma-separated list which consists of even number of
+      elements. Leading and trailing spaces will be trimmed. Every
+      pair of elements:
+
+      * Axis value
+      * Name
     """
     result = fontforge.askMulti("Design axes", _prepareQuestions())
     if result:

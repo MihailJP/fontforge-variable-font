@@ -79,7 +79,7 @@ def getVFValue(font: fontforge.font, key: str, default=None):
     else:
         info = font.persistent["VF"]
         for k in key.split('.'):
-            k = intOrFloat(k)
+            k = intOrFloat(k.replace('\ufdd0', '.'))
             if not isinstance(info, dict):
                 return default
             elif k not in info:
@@ -104,7 +104,7 @@ def setVFValue(font: fontforge.font, key: str, val):
     initPersistentDict(font)
     info = font.persistent["VF"]
     for k in key.split('.')[:-1]:
-        k = intOrFloat(k)
+        k = intOrFloat(k.replace('\ufdd0', '.'))
         if k not in info:
             info[k] = dict()
         elif not isinstance(info[k], dict):
@@ -140,7 +140,7 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
     if vfInfoExists(font):
         info = font.persistent["VF"]
         for k in key.split('.')[:-1]:
-            k = intOrFloat(k)
+            k = intOrFloat(k.replace('\ufdd0', '.'))
             if k not in info:
                 return False
             elif not isinstance(info[k], dict):
