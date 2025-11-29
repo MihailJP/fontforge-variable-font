@@ -117,6 +117,14 @@ def _prepareQuestions():
                 'default': str(tagVal),
             })
 
+        questions[2]["questions"].append({
+            'type': 'string',
+            'question': v["name"] + ':',
+            'tag': k + 'map',
+            'default': ', '.join(list(map(lambda x: str(x[0]) + ',' + str(x[1]), \
+                utils.getVFValue(font, 'axes.' + k + '.map', [])))),
+        })
+
         questions[3]["questions"].append({
             'type': 'string',
             'question': v["name"] + ':',
@@ -177,6 +185,12 @@ def _saveResult(result):
             utils.deleteVFValue(font, 'axes.' + k + '.value')
         if k.startswith('custom'):
             utils.setOrDeleteVFValue(font, 'axes.' + k + '.tag', result[k + 'tag'])
+
+        utils.deleteVFValue(font, 'axes.' + k + '.map')
+        if result[k + 'map']:
+            l = list(zip(_x := iter([utils.intOrFloat(x) for x in result[k + 'map'].split(',')]), _x))
+            utils.setOrDeleteVFValue(font, 'axes.' + k + '.map', l if l else None)
+
         utils.setOrDeleteVFValue(font, 'axes.' + k + '.order', int(result[k + 'order']) if result[k + 'order'] else None)
         utils.deleteVFValue(font, 'axes.' + k + '.labels')
         if result[k + 'labels']:
@@ -197,6 +211,7 @@ def _saveResult(result):
                     val = val.replace('.', '\ufdd0') # escape decimal point with noncharacter
                     utils.setOrDeleteVFValue(font, 'axes.' + k + '.labels.' + val + '.localNames.' + result['lang' + i],
                         None if name == '' else name)
+
         utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
         utils.deleteVFValue(font, 'axes.' + k + '.localNames')
         for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
@@ -253,6 +268,17 @@ def designAxesMenu(u, glyph):
     default.)
 
     Sets the order of design axes.
+
+    Axis map
+    --------
+
+    This section is needed for default master (choose one master as
+    default.)
+
+    Maps user position to design position.
+
+    Input must be comma-separated values and even number of elements.
+    Each pair consists of user and design positions in this order.
 
     Axis name
     ---------
