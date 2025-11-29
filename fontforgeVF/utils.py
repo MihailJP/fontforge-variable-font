@@ -1,17 +1,17 @@
 import fontforge
 
 def initPersistentDict(font: fontforge.font) -> bool:
-    """Make sure `font.persistent` is a `dict`
+    """Make sure ``font.persistent`` is a ``dict``
 
-    If `font.persistent` is a `dict`, does nothing. Otherwise sets it to
-    an empty `dict`.
+    If ``font.persistent`` is a ``dict``, does nothing. Otherwise sets
+    it to an empty ``dict``.
 
-    In case there is already non-`dict` `font.persistent`, if UI is
-    active, asks the user before deletes it. If not running interactively,
-    it will be deleted without warning.
+    In case there is already non-``dict`` ``font.persistent``, if UI is
+    active, asks the user before deletes it. If not running
+    interactively, it will be deleted without warning.
 
-    Returns `False` if the user refuses to delete existing
-    `font.persistent`, `True` otherwise.
+    :return: ``False`` if the user refuses to delete existing
+    ``font.persistent``, ``True`` otherwise.
     """
     if font.persistent is None:
         font.persistent = {}
@@ -28,9 +28,9 @@ def initPersistentDict(font: fontforge.font) -> bool:
 def vfInfoExists(font: fontforge.font) -> bool:
     """Check if VF info exists
 
-    Check if `font.persistent` is a `dict` and `VF` key is in it.
+    Check if ``font.persistent`` is a ``dict`` and ``VF`` key is in it.
 
-    Returns `True` if VF info exists, `False` if not.
+    :return: ``True`` if VF info exists, ``False`` if not.
     """
     if font.persistent is None:
         return False

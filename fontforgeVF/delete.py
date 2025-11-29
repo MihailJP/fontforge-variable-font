@@ -4,11 +4,11 @@ import fontforge
 def deleteVFInfo(font: fontforge.font) -> bool:
     """Deletes VF info
 
-    Deletes `VF` key from `font.persistent` if it is a `dict`. Otherwise
-    does nothing. If such case that the `dict` will be empty,
-    `font.persistent` will be set to `None`.
+    Deletes ``VF`` key from ``font.persistent`` if it is a ``dict``.
+    Otherwise does nothing. If such case that the ``dict`` will be
+    empty, ``font.persistent`` will be set to ``None``.
 
-    Returns `True` if the key was deleted, `False` otherwise.
+    :return: ``True`` if the key was deleted, ``False`` otherwise.
     """
     if utils.vfInfoExists(font):
         del font.persistent['VF']

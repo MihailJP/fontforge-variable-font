@@ -27,18 +27,18 @@ def designAxesMenu(u, glyph):
     axis of VF master. Leave unset for unused axes. Registered axes can
     use default values which refers font properties.
 
-    * Italic: default value is whether `font.italicangle` is negative.
+    * Italic: default value is whether ``font.italicangle`` is negative.
       This axis is boolean: you choose the master is for italic or not.
       Seldom used together with slant axis.
-    * Optical size: can default to `font.design_size`. Set in points.
+    * Optical size: can default to ``font.design_size``. Set in points.
       Must be positive.
-    * Slant: can default to `font.italicangle`. 0 if upright, negative if
-      oblique. This value is hardly positive (left-slanted.)
-    * Width: can default using `font.os2_width`. 100 if normal width, less
-      if condensed, greater if expanded. Must be positive.
-    * Weight: can default to `font.os2_weight`. 400 if regular weight, 700
-      if bold. The minimum is 1 (hairline thin) and the maximum is 999
-      (extreme bold.)
+    * Slant: can default to ``font.italicangle``. 0 if upright, negative
+      if oblique. This value is hardly positive (left-slanted.)
+    * Width: can default using ``font.os2_width``. 100 if normal width,
+      less if condensed, greater if expanded. Must be positive.
+    * Weight: can default to ``font.os2_weight``. 400 if regular weight,
+      700 if bold. The minimum is 1 (hairline thin) and the maximum is
+      999 (extreme bold.)
     * Custom axes: there is a room for 3 user-defined axes. No default
       values.
 
