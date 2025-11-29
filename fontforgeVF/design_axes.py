@@ -16,15 +16,29 @@ designAxes = {
 def _prepareQuestions():
     font = fontforge.activeFont()
     questions =  [
-        {
-            'category': 'This master',
-            'questions': [],
-        },
-        {
-            'category': 'Custom axes',
-            'questions': [],
-        },
+        { 'category': 'This master', 'questions': [], },
+        { 'category': 'Custom axes', 'questions': [], },
+        { 'category': 'Axis order',  'questions': [], },
+        { 'category': 'Axis names',  'questions': [], },
     ]
+    languages = set()
+    for k, v in designAxes.items():
+        languages |= set(utils.getVFValue(font, 'axes.' + k + '.localNames', {}).keys())
+    languages = tuple(languages)
+    localNameCategory = len(questions)
+    localNameRange = range(1, max(((len(languages) + 7) // 4) * 4, 8)+1)
+    for i in localNameRange:
+        questions.append({
+            'category': 'Localized names ' + (languages[i-1] if i <= len(languages) else str(i)),
+            'questions': [
+                {
+                    'type': 'string',
+                    'question': 'Language code:',
+                    'tag': 'lang' + str(i),
+                    'default': languages[i-1] if i <= len(languages) else '',
+                },
+            ],
+        })
     for k, v in designAxes.items():
         tagStat = 1 if utils.getVFValue(font, 'axes.' + k + '.active', False) else 0
         if tagStat == 1 and not k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.useDefault', False):
@@ -62,6 +76,29 @@ def _prepareQuestions():
                 'default': str(tagVal),
             })
 
+        questions[2]["questions"].append({
+            'type': 'string',
+            'question': v["name"] + ':',
+            'tag': k + 'order',
+            'default': str(utils.getVFValue(font, 'axes.' + k + '.order', '')),
+        })
+
+        questions[3]["questions"].append({
+            'type': 'string',
+            'question': v["name"] + ':',
+            'tag': k + 'name',
+            'default': utils.getVFValue(font, 'axes.' + k + '.name', '' if k.startswith('custom') else v["name"]),
+        })
+
+        for i in localNameRange:
+            questions[localNameCategory + i - 1]["questions"].append({
+                'type': 'string',
+                'question': v["name"] + ':',
+                'tag': k + 'name' + str(i),
+                'default': utils.getVFValue(font, 'axes.' + k + '.localNames.' + languages[i-1], '')
+                    if i <= len(languages) else '',
+            })
+
         if k.startswith('custom'):
             questions[1]["questions"].append({
                 'type': 'string',
@@ -81,11 +118,19 @@ def _saveResult(result):
         else:
             utils.deleteVFValue(font, 'axes.' + k + '.useDefault')
         if result[k] == 'custom':
-            utils.setVFValue(font, 'axes.' + k + '.value', result[k + 'val'] == 'true' if k == 'ital' else utils.intOrFloat(result[k + 'val']))
+            utils.setVFValue(font, 'axes.' + k + '.value',
+                result[k + 'val'] == 'true' if k == 'ital' else utils.intOrFloat(result[k + 'val']))
         else:
             utils.deleteVFValue(font, 'axes.' + k + '.value')
         if k.startswith('custom'):
             utils.setOrDeleteVFValue(font, 'axes.' + k + '.tag', result[k + 'tag'])
+        utils.setOrDeleteVFValue(font, 'axes.' + k + '.order', int(result[k + 'order']) if result[k + 'order'] else None)
+        utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
+        utils.deleteVFValue(font, 'axes.' + k + '.localNames')
+        for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
+                if result['lang' + i]:
+                    utils.setOrDeleteVFValue(font, 'axes.' + k + '.localNames.' + result['lang' + i],
+                        result[k + 'name' + i])
     #print(result)
     #print(font.persistent)
 
@@ -128,6 +173,36 @@ def designAxesMenu(u, glyph):
     Sets the tag for each custom axis. A tag must be up to 4-letter
     alphanumeric. Will be padded with implicit trailing spaces. Leave
     them blank if not used.
+
+    Axis order
+    ----------
+
+    This section is needed for default master (choose one master as
+    default.)
+
+    Sets the order of design axes.
+
+    Axis name
+    ---------
+
+    This section is needed for default master (choose one master as
+    default.)
+
+    Names the design axes. For predefined axes can use default name.
+    Custom axes must be named if used.
+
+    Localized names
+    ---------------
+
+    This section is needed for default master (choose one master as
+    default.)
+
+    Design axes can have translated names. Each page for each language.
+    Set language code before you use. Language code can be such as
+    'ja-JP' or 'fr-FR' (input without quotation marks.)
+
+    By default there is a room for 8 languages, but this will be
+    extended if already more than 4 languages are defined.
     """
     result = fontforge.askMulti("Design axes", _prepareQuestions())
     if result:
