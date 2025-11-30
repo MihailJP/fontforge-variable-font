@@ -1,4 +1,4 @@
-from fontforgeVF import utils
+from fontforgeVF import utils, language
 import fontforge
 
 designAxes = {
@@ -70,14 +70,20 @@ def _prepareQuestions():
     localNameCategory = len(questions)
     localNameRange = range(1, max(((len(languages) + 7) // 4) * 4, 8)+1)
     for i in localNameRange:
+        defaultCode = languages[i-1] if i <= len(languages) else ''
+        languageList = [
+            {'name': '', 'tag': '', 'default': defaultCode == ''}
+        ]
+        for langId, langCode, langName in sorted(language.languageCodeIterator(), key=lambda x: x[2]):
+            languageList.append({'name': langName, 'tag': langCode, 'default': langCode == defaultCode})
         questions.append({
             'category': 'Localized names ' + (languages[i-1] if i <= len(languages) else str(i)),
             'questions': [
                 {
-                    'type': 'string',
-                    'question': 'Language code:',
+                    'type': 'choice',
+                    'question': 'Language:',
                     'tag': 'lang' + str(i),
-                    'default': languages[i-1] if i <= len(languages) else '',
+                    'answers': languageList,
                 },
             ],
         })
@@ -307,8 +313,7 @@ def designAxesMenu(u, glyph):
     default.)
 
     Design axes can have translated names. Each page for each language.
-    Set language code before you use. Language code can be such as
-    'ja-JP' or 'fr-FR' (input without quotation marks.)
+    Set language code before you use. Choose a language from the list.
 
     By default there is a room for 8 languages, but this will be
     extended if already more than 4 languages are defined.
