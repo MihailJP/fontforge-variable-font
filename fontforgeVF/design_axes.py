@@ -20,15 +20,16 @@ def _loadLabels(tag, lang=None):
         text = ''
         assert(isinstance(label, dict))
         for k, v in label.items():
+            labelAddr = addr + '.' + str(k).replace('.', '\ufdd0') # escape decimal point with noncharacter
             if lang:
                 text += str(k) + ',' + \
-                    utils.getVFValue(font, addr + '.' + str(k) + '.localNames.' + lang, '') + \
+                    utils.getVFValue(font, labelAddr + '.localNames.' + lang, '') + \
                     ', '
             else:
                 text += str(k) + ',' + \
-                    ('1' if utils.getVFValue(font, addr + '.' + str(k) + '.elidable', False) else '0') + \
-                    ',' + str(utils.getVFValue(font, addr + '.' + str(k) + '.linkedValue', '')) + \
-                    ',' + utils.getVFValue(font, addr + '.' + str(k) + '.name', '') + \
+                    ('1' if utils.getVFValue(font, labelAddr + '.elidable', False) else '0') + \
+                    ',' + str(utils.getVFValue(font, labelAddr + '.linkedValue', '')) + \
+                    ',' + utils.getVFValue(font, labelAddr + '.name', '') + \
                     ', '
         return text[:-2]
     elif lang:

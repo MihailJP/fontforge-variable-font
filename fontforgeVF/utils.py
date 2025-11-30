@@ -79,7 +79,7 @@ def getVFValue(font: fontforge.font, key: str, default=None):
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\uffd0``.
+    it to ``\\ufdd0``.
     :param default: Optional. Returns this value if ``key`` does not
     exist. Without this parameter defaults to ``None``.
     :return: the value for ``key``, or ``default`` if no such ``key``.
@@ -109,7 +109,7 @@ def setVFValue(font: fontforge.font, key: str, val):
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\uffd0``.
+    it to ``\\ufdd0``.
     :param val: A value to set. this can be anything picklable.
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """
@@ -148,7 +148,7 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\uffd0``.
+    it to ``\\ufdd0``.
     :return: ``True`` if the key was deleted, ``False`` otherwise.
     """
     if vfInfoExists(font):
@@ -178,7 +178,7 @@ def setOrDeleteVFValue(font: fontforge.font, key: str, val):
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\uffd0``.
+    it to ``\\ufdd0``.
     :param val: A value to set. this can be anything picklable.
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """
