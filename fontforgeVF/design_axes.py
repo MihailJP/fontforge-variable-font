@@ -13,7 +13,33 @@ designAxes = {
 }
 
 
-def _loadLabels(tag, lang=None):
+def _searchCustomAxis(font: fontforge.font, tag: str) -> str | None:
+    if tag in designAxes: # predefined tag
+        return tag
+    else:
+        for k, v in designAxes.items():
+            if k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.tag', '') == tag:
+                return k
+        return None
+
+
+def getAxisValue(font: fontforge.font, tag: str) -> int | float | None:
+    """Gets a value from a design axis"""
+    internalTag = _searchCustomAxis(font, tag)
+    if internalTag is None:
+        return None
+    elif not utils.getVFValue(font, 'axes.' + internalTag + '.active'):
+        return None
+    elif utils.getVFValue(font, 'axes.' + internalTag + '.useDefault'):
+        if internalTag == 'ital':
+            return int(designAxes[internalTag]['auto'](font))
+        else:
+            return designAxes[internalTag]['auto'](font)
+    else:
+        return utils.getVFValue(font, 'axes.' + internalTag + '.value')
+
+
+def _loadLabels(tag: str, lang=None):
     font = fontforge.activeFont()
     addr = 'axes.' + tag + '.labels'
     if label := utils.getVFValue(font, addr):
@@ -74,7 +100,7 @@ def _prepareQuestions():
         languageList = [
             {'name': '', 'tag': '', 'default': defaultCode == ''}
         ]
-        for langId, langCode, langName in sorted(language.languageCodeIterator(), key=lambda x: x[2]):
+        for langId, langCode, langName in sorted(language.languageCodeIterator(True), key=lambda x: x[2]):
             languageList.append({'name': langName, 'tag': langCode, 'default': langCode == defaultCode})
         questions.append({
             'category': 'Localized names ' + (languages[i-1] if i <= len(languages) else str(i)),

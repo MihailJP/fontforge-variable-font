@@ -1,3 +1,5 @@
+from fontTools.ttLib.tables._n_a_m_e import _WINDOWS_LANGUAGES
+
 languageData = {
     1: {
         'name': 'Arabic',
@@ -787,7 +789,7 @@ languageData = {
 }
 
 
-def languageCodeIterator():
+def languageCodeIterator(useTableInFontTools: bool = False):
     """Language code data iterator
 
     This iterator yields 3-tuple consisting of MS language ID,
@@ -797,5 +799,23 @@ def languageCodeIterator():
     for lsb, langData in languageData.items():
         for msb, subLangData in langData.items():
             if isinstance(msb, int):
-                for name in subLangData['name']:
-                    yield (msb * 1024 + lsb,subLangData['code'], name.replace('.', langData['name']))
+                winLang = msb * 1024 + lsb
+                if useTableInFontTools:
+                    name = subLangData['name'][0]
+                    if winLang == 0x40a: # Skip Spanish (traditional sort)
+                        pass
+                    elif winLang == 0xc0a: # Spanish (modern sort)
+                        yield (winLang, _WINDOWS_LANGUAGES[winLang], 'Spanish (Spain)')
+                    elif winLang in _WINDOWS_LANGUAGES:
+                        yield (winLang, _WINDOWS_LANGUAGES[winLang], name.replace('.', langData['name']))
+                else:
+                    for name in subLangData['name']:
+                        yield (winLang, subLangData['code'], name.replace('.', langData['name']))
+
+
+def languageCodeReverseLookup(langName: str) -> str | None:
+    """Lookup language code from language name"""
+    for i, c, n in languageCodeIterator():
+        if n == langName:
+            return c
+    return None
