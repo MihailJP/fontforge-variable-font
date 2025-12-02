@@ -85,7 +85,7 @@ def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument):
         s.familyName = _getFontFamilyName(f)
         s.styleName = _getFontSubFamilyName(f)
         s.localisedFamilyName = {}
-        for i in set([l[0] for l in f.sfnt_names]) - set(['English (US)']):
+        for i in set([L[0] for L in f.sfnt_names]) - set(['English (US)']):
             s.localisedFamilyName[language.languageCodeReverseLookup(i)] = _getFontFamilyName(f, i)
         doc.addSource(s)
 
@@ -100,14 +100,14 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument):
             a.maximum = _axisMaxValue(font, a.tag)
             a.default = getAxisValue(font, a.tag)
             a.name = utils.getVFValue(font, 'axes.' + k + '.name', v['name'])
-            for l, n in utils.getVFValue(font, 'axes.' + k + '.localNames', {}).items():
-                a.labelNames[l] = n
+            for L, n in utils.getVFValue(font, 'axes.' + k + '.localNames', {}).items():
+                a.labelNames[L] = n
             if val := utils.getVFValue(font, 'axes.' + k + '.map'):
                 a.map = val
             if val := utils.getVFValue(font, 'axes.' + k + '.order'):
                 a.axisOrdering = val
             if labels := utils.getVFValue(font, 'axes.' + k + '.labels'):
-                l = []
+                L = []
                 for u, d in labels.items():
                     if not (a.minimum <= u <= a.maximum):
                         fontforge.logWarning('Ignored label {0} = {1} because out of range'.format(
@@ -124,8 +124,8 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument):
                         if 'localNames' in d:
                             for lang, name in d['localNames'].items():
                                 al.labelNames[lang] = name
-                        l.append(al)
-                a.axisLabels = l
+                        L.append(al)
+                a.axisLabels = L
             doc.addAxis(a)
 
 

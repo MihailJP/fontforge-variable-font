@@ -226,8 +226,8 @@ def _saveResult(result):
 
         utils.deleteVFValue(font, 'axes.' + k + '.map')
         if result[k + 'map']:
-            l = list(zip(_x := iter([utils.intOrFloat(x) for x in result[k + 'map'].split(',')]), _x))
-            utils.setOrDeleteVFValue(font, 'axes.' + k + '.map', l if l else None)
+            L = list(zip(_x := iter([utils.intOrFloat(x) for x in result[k + 'map'].split(',')]), _x))
+            utils.setOrDeleteVFValue(font, 'axes.' + k + '.map', L if L else None)
 
         utils.setOrDeleteVFValue(font, 'axes.' + k + '.order', int(result[k + 'order']) if result[k + 'order'] else None)
         utils.deleteVFValue(font, 'axes.' + k + '.labels')
