@@ -1,6 +1,7 @@
 from fontforgeVF import utils
 import fontforge
 
+
 def deleteVFInfo(font: fontforge.font) -> bool:
     """Deletes VF info
 

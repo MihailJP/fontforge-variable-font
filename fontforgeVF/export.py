@@ -7,18 +7,19 @@ from fontTools.designspaceLib import \
     DesignSpaceDocument, SourceDescriptor, \
     AxisDescriptor, DiscreteAxisDescriptor, AxisLabelDescriptor
 
+
 def _getSourceFonts(defaultFont: fontforge.font) -> list[fontforge.font]:
     return list(filter(lambda f: f.familyname == defaultFont.familyname, fontforge.fonts()))
 
 
 def _axisMinValue(defaultFont: fontforge.font, tag: str) -> int | float:
     return min(filter(lambda x: x is not None,
-        map(lambda f: getAxisValue(f, tag), _getSourceFonts(defaultFont))))
+                      map(lambda f: getAxisValue(f, tag), _getSourceFonts(defaultFont))))
 
 
 def _axisMaxValue(defaultFont: fontforge.font, tag: str) -> int | float:
     return max(filter(lambda x: x is not None,
-        map(lambda f: getAxisValue(f, tag), _getSourceFonts(defaultFont))))
+                      map(lambda f: getAxisValue(f, tag), _getSourceFonts(defaultFont))))
 
 
 def _getFontFamilyName(font: fontforge.font, lang: str = 'English (US)') -> str | None:
@@ -36,7 +37,7 @@ def _getFontFamilyName(font: fontforge.font, lang: str = 'English (US)') -> str 
             nametype = 3
     return name
 
-            
+
 def _getFontSubFamilyName(font: fontforge.font, lang: str = 'English (US)') -> str | None:
     name = font.weight if lang == 'English (US)' else None
     nametype = 0
@@ -54,7 +55,7 @@ def _getFontSubFamilyName(font: fontforge.font, lang: str = 'English (US)') -> s
 
 
 def _outputUfo(font: fontforge.font, outputDir: str, outputFile: str):
-    assert(outputFile.endswith('.ufo'))
+    assert outputFile.endswith('.ufo')
     font.generate(outputDir + '/' + outputFile)
     if not isinstance(font.temporary, dict):
         font.temporary = dict()
@@ -137,7 +138,7 @@ def _makeDesignSpace(font: fontforge.font, outputDir: str, outputFile: str):
 
 def exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
     """Exports variable font"""
-    assert(dialogResult['file'].endswith('.ttf'))
+    assert dialogResult['file'].endswith('.ttf')
     with tempfile.TemporaryDirectory() as tmpdir:
         s = 0
         for f in _getSourceFonts(font):
@@ -156,16 +157,19 @@ def exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
                 check=True, text=True, capture_output=True)
         except CalledProcessError as e:
             fontforge.logWarning(e.stderr)
-            fontforge.postError("Failed to export",
-                "fontmake failed with return code {0}".format(e.returncode))
+            fontforge.postError(
+                "Failed to export",
+                "fontmake failed with return code {0}".format(e.returncode)
+            )
 
 
 def _saveMenuDialog(font: fontforge.font) -> dict | None:
     questions = [
         {
             'type': 'savepath', 'question': 'Save as:', 'tag': 'file',
-            'default': font.default_base_filename + '.ttf' if font.default_base_filename else \
-                '.'.join(font.path.split('.')[:-1]) + '.ttf',
+            'default':
+                font.default_base_filename + '.ttf' if font.default_base_filename
+                else '.'.join(font.path.split('.')[:-1]) + '.ttf',
             'filter': '*.ttf',
         },
         {

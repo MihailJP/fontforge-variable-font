@@ -1,6 +1,7 @@
 from fontforgeVF import delete, design_axes, export
 import fontforge
 
+
 def loadMenu(u, glyph):
     fontforge.postNotice("This is a mockup", "Not yet implemented!")
 

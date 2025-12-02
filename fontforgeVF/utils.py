@@ -1,5 +1,6 @@
 import fontforge
 
+
 def intOrFloat(val):
     """Convert to ``int`` or ``float`` if possible
 
