@@ -2,11 +2,15 @@ from fontforgeVF import utils, language
 import fontforge
 
 
+def _getWidthFromOS2Width(font: fontforge.font) -> int | float:
+    return [50, 62.5, 75, 87.5, 100, 112.5, 125, 150, 200][font.os2_width - 1]
+
+
 designAxes = {  # noqa: E241
     "ital":    {"name": "Italic",       "auto": lambda font: font.italicangle < 0},
     "opsz":    {"name": "Optical Size", "auto": lambda font: font.design_size},
     "slnt":    {"name": "Slant",        "auto": lambda font: font.italicangle},
-    "wdth":    {"name": "Width",        "auto": lambda font: [50, 62.5, 75, 87.5, 100, 112.5, 125, 150, 200][font.os2_width - 1]},
+    "wdth":    {"name": "Width",        "auto": lambda font: _getWidthFromOS2Width(font)},
     "wght":    {"name": "Weight",       "auto": lambda font: font.os2_weight},
     "custom1": {"name": "Custom 1",     "auto": None},
     "custom2": {"name": "Custom 2",     "auto": None},
