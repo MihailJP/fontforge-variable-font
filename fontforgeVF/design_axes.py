@@ -85,15 +85,9 @@ def _loadLabels(tag: str, lang=None):
         return ''
 
 
-def _prepareQuestions():
+# Load values and make dialog components
+def _prepareQuestions_languages(questions):
     font = fontforge.activeFont()
-    questions = [
-        {'category': 'This master', 'questions': []},
-        {'category': 'Custom axes', 'questions': []},
-        {'category': 'Axis map',    'questions': []},
-        {'category': 'Axis order',  'questions': []},
-        {'category': 'Axis names',  'questions': []},
-    ]
     languages = set()
     for k, v in designAxes.items():
         languages |= set(utils.getVFValue(font, 'axes.' + k + '.localNames', {}).keys())
@@ -118,157 +112,204 @@ def _prepareQuestions():
                 },
             ],
         })
-    for k, v in designAxes.items():
-        tagStat = 1 if utils.getVFValue(font, 'axes.' + k + '.active', False) else 0
-        if tagStat == 1 and not k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.useDefault', False):
-            tagStat = 2
-        defaultTagVal = v["auto"](font) if v["auto"] else 0
-        tagVal = utils.getVFValue(font, 'axes.' + k + '.value', defaultTagVal) if tagStat == 1 else defaultTagVal
+    return languages, localNameCategory, localNameRange
+
+
+def _prepareQuestions_values(questions, k, v):
+    font = fontforge.activeFont()
+    tagStat = 1 if utils.getVFValue(font, 'axes.' + k + '.active', False) else 0
+    if tagStat == 1 and not k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.useDefault', False):
+        tagStat = 2
+    defaultTagVal = v["auto"](font) if v["auto"] else 0
+    tagVal = utils.getVFValue(font, 'axes.' + k + '.value', defaultTagVal) if tagStat == 1 else defaultTagVal
+    questions[0]["questions"].append({
+        'type': 'choice',
+        'question': v["name"] + ':',
+        'tag': k,
+        'checks': True,
+        'answers': [
+            {'name': 'Unset', 'tag': 'unset', 'default': tagStat == 0},
+            {'name': 'Set', 'tag': 'custom', 'default': tagStat == 1},
+        ] + ([
+            {'name': 'Default (' + str(v["auto"](font)) + ')', 'tag': 'auto', 'default': tagStat == 2},
+        ] if v["auto"] else []),
+    })
+    if k == 'ital':
         questions[0]["questions"].append({
             'type': 'choice',
-            'question': v["name"] + ':',
-            'tag': k,
+            'question': '',
+            'tag': k + 'val',
             'checks': True,
             'answers': [
-                {'name': 'Unset', 'tag': 'unset', 'default': tagStat == 0},
-                {'name': 'Set', 'tag': 'custom', 'default': tagStat == 1},
-            ] + ([
-                {'name': 'Default (' + str(v["auto"](font)) + ')', 'tag': 'auto', 'default': tagStat == 2},
-            ] if v["auto"] else []),
+                {'name': 'No', 'tag': 'false', 'default': not tagVal},
+                {'name': 'Yes', 'tag': 'true', 'default': tagVal},
+            ],
         })
-        if k == 'ital':
-            questions[0]["questions"].append({
-                'type': 'choice',
-                'question': '',
-                'tag': k + 'val',
-                'checks': True,
-                'answers': [
-                    {'name': 'No', 'tag': 'false', 'default': not tagVal},
-                    {'name': 'Yes', 'tag': 'true', 'default': tagVal},
-                ],
-            })
-        else:
-            questions[0]["questions"].append({
-                'type': 'string',
-                'question': '',
-                'tag': k + 'val',
-                'default': str(tagVal),
-            })
-
-        questions[2]["questions"].append({
+    else:
+        questions[0]["questions"].append({
             'type': 'string',
-            'question': v["name"] + ':',
-            'tag': k + 'map',
-            'default': ', '.join(list(map(
-                lambda x: str(x[0]) + ',' + str(x[1]),
-                utils.getVFValue(font, 'axes.' + k + '.map', [])
-            ))),
+            'question': '',
+            'tag': k + 'val',
+            'default': str(tagVal),
         })
 
-        questions[3]["questions"].append({
-            'type': 'string',
-            'question': v["name"] + ':',
-            'tag': k + 'order',
-            'default': str(utils.getVFValue(font, 'axes.' + k + '.order', '')),
-        })
 
-        questions[4]["questions"].append({
+def _prepareQuestions_map(questions, k, v):
+    font = fontforge.activeFont()
+    questions[2]["questions"].append({
+        'type': 'string',
+        'question': v["name"] + ':',
+        'tag': k + 'map',
+        'default': ', '.join(list(map(
+            lambda x: str(x[0]) + ',' + str(x[1]),
+            utils.getVFValue(font, 'axes.' + k + '.map', [])
+        ))),
+    })
+
+
+def _prepareQuestions_order(questions, k, v):
+    font = fontforge.activeFont()
+    questions[3]["questions"].append({
+        'type': 'string',
+        'question': v["name"] + ':',
+        'tag': k + 'order',
+        'default': str(utils.getVFValue(font, 'axes.' + k + '.order', '')),
+    })
+
+
+def _prepareQuestions_names(questions, k, v):
+    font = fontforge.activeFont()
+    questions[4]["questions"].append({
+        'type': 'string',
+        'question': v["name"] + ':',
+        'tag': k + 'name',
+        'default': utils.getVFValue(font, 'axes.' + k + '.name', '' if k.startswith('custom') else v["name"]),
+    })
+    questions[4]["questions"].append({
+        'type': 'string',
+        'question': '\tLabels:',
+        'tag': k + 'labels',
+        'default': _loadLabels(k),
+    })
+
+
+def _prepareQuestions_localNames(questions, k, v, languages, localNameRange, localNameCategory):
+    font = fontforge.activeFont()
+    for i in localNameRange:
+        questions[localNameCategory + i - 1]["questions"].append({
             'type': 'string',
             'question': v["name"] + ':',
-            'tag': k + 'name',
-            'default': utils.getVFValue(font, 'axes.' + k + '.name', '' if k.startswith('custom') else v["name"]),
+            'tag': k + 'name' + str(i),
+            'default': utils.getVFValue(
+                font, 'axes.' + k + '.localNames.' + languages[i-1], ''
+            ) if i <= len(languages) else '',
         })
-        questions[4]["questions"].append({
+        questions[localNameCategory + i - 1]["questions"].append({
             'type': 'string',
             'question': '\tLabels:',
-            'tag': k + 'labels',
-            'default': _loadLabels(k),
+            'tag': k + 'labels' + str(i),
+            'default': _loadLabels(k, languages[i-1]) if i <= len(languages) else '',
         })
 
-        for i in localNameRange:
-            questions[localNameCategory + i - 1]["questions"].append({
-                'type': 'string',
-                'question': v["name"] + ':',
-                'tag': k + 'name' + str(i),
-                'default': utils.getVFValue(
-                    font, 'axes.' + k + '.localNames.' + languages[i-1], ''
-                ) if i <= len(languages) else '',
-            })
-            questions[localNameCategory + i - 1]["questions"].append({
-                'type': 'string',
-                'question': '\tLabels:',
-                'tag': k + 'labels' + str(i),
-                'default': _loadLabels(k, languages[i-1]) if i <= len(languages) else '',
-            })
 
-        if k.startswith('custom'):
-            questions[1]["questions"].append({
-                'type': 'string',
-                'question': v["name"] + ' tag:',
-                'tag': k + 'tag',
-                'default': '',
-            })
+def _prepareQuestions_custom(questions, k, v):
+    if k.startswith('custom'):
+        questions[1]["questions"].append({
+            'type': 'string',
+            'question': v["name"] + ' tag:',
+            'tag': k + 'tag',
+            'default': '',
+        })
+
+
+def _prepareQuestions():
+    questions = [
+        {'category': 'This master', 'questions': []},
+        {'category': 'Custom axes', 'questions': []},
+        {'category': 'Axis map',    'questions': []},
+        {'category': 'Axis order',  'questions': []},
+        {'category': 'Axis names',  'questions': []},
+    ]
+
+    languages, localNameCategory, localNameRange = _prepareQuestions_languages(questions)
+    for k, v in designAxes.items():
+        _prepareQuestions_values(questions, k, v)
+        _prepareQuestions_map(questions, k, v)
+        _prepareQuestions_order(questions, k, v)
+        _prepareQuestions_names(questions, k, v)
+        _prepareQuestions_localNames(questions, k, v, languages, localNameRange, localNameCategory)
+        _prepareQuestions_custom(questions, k, v)
     return questions
 
 
-def _saveResult(result):
+# Save result
+def _saveResult_values(result, k, v):
     font = fontforge.activeFont()
-    for k, v in designAxes.items():
-        utils.setVFValue(font, 'axes.' + k + '.active', result[k] != 'unset')
-        if not k.startswith('custom') and result[k] != 'unset':
-            utils.setVFValue(font, 'axes.' + k + '.useDefault', result[k] == 'auto')
-        else:
-            utils.deleteVFValue(font, 'axes.' + k + '.useDefault')
-        if result[k] == 'custom':
-            utils.setVFValue(
-                font, 'axes.' + k + '.value',
-                result[k + 'val'] == 'true' if k == 'ital' else utils.intOrFloat(result[k + 'val']))
-        else:
-            utils.deleteVFValue(font, 'axes.' + k + '.value')
-        if k.startswith('custom'):
-            utils.setOrDeleteVFValue(font, 'axes.' + k + '.tag', result[k + 'tag'])
+    utils.setVFValue(font, 'axes.' + k + '.active', result[k] != 'unset')
+    if not k.startswith('custom') and result[k] != 'unset':
+        utils.setVFValue(font, 'axes.' + k + '.useDefault', result[k] == 'auto')
+    else:
+        utils.deleteVFValue(font, 'axes.' + k + '.useDefault')
+    if result[k] == 'custom':
+        utils.setVFValue(
+            font, 'axes.' + k + '.value',
+            result[k + 'val'] == 'true' if k == 'ital' else utils.intOrFloat(result[k + 'val']))
+    else:
+        utils.deleteVFValue(font, 'axes.' + k + '.value')
+    if k.startswith('custom'):
+        utils.setOrDeleteVFValue(font, 'axes.' + k + '.tag', result[k + 'tag'])
 
-        utils.deleteVFValue(font, 'axes.' + k + '.map')
-        if result[k + 'map']:
-            L = list(zip(_x := iter([utils.intOrFloat(x) for x in result[k + 'map'].split(',')]), _x))
-            utils.setOrDeleteVFValue(font, 'axes.' + k + '.map', L if L else None)
 
-        utils.setOrDeleteVFValue(font, 'axes.' + k + '.order', int(result[k + 'order']) if result[k + 'order'] else None)
-        utils.deleteVFValue(font, 'axes.' + k + '.labels')
-        if result[k + 'labels']:
-            for val, el, lv, name in list(map(
-                lambda x: (x[0][0].strip(), x[0][1].strip(), x[1][0].strip(), x[1][1].strip()),
-                zip(_x := zip(_x := iter(result[k + 'labels'].split(',')), _x), _x)
-            )):
+def _saveResult_labels(result, k, v):
+    font = fontforge.activeFont()
+    utils.setOrDeleteVFValue(font, 'axes.' + k + '.order', int(result[k + 'order']) if result[k + 'order'] else None)
+    utils.deleteVFValue(font, 'axes.' + k + '.labels')
+    if result[k + 'labels']:
+        for val, el, lv, name in list(map(
+            lambda x: (x[0][0].strip(), x[0][1].strip(), x[1][0].strip(), x[1][1].strip()),
+            zip(_x := zip(_x := iter(result[k + 'labels'].split(',')), _x), _x)
+        )):
+            val = val.replace('.', '\ufdd0')  # escape decimal point with noncharacter
+            valAddr = 'axes.' + k + '.labels.' + val
+            utils.setOrDeleteVFValue(font, valAddr + '.elidable',
+                                     None if el == '' else bool(utils.intOrFloat(el)))
+            utils.setOrDeleteVFValue(font, valAddr + '.linkedValue',
+                                     None if lv == '' else utils.intOrFloat(lv))
+            utils.setOrDeleteVFValue(font, valAddr + '.name',
+                                     None if name == '' else name)
+            utils.deleteVFValue(font, 'axes.' + k + '.labels.' + val + '.localNames')
+    for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
+        if result['lang' + i] and result[k + 'labels' + i]:
+            for val, name in list(zip(_x := iter(result[k + 'labels' + i].split(',')), _x)):
                 val = val.replace('.', '\ufdd0')  # escape decimal point with noncharacter
-                valAddr = 'axes.' + k + '.labels.' + val
-                utils.setOrDeleteVFValue(font, valAddr + '.elidable',
-                                         None if el == '' else bool(utils.intOrFloat(el)))
-                utils.setOrDeleteVFValue(font, valAddr + '.linkedValue',
-                                         None if lv == '' else utils.intOrFloat(lv))
-                utils.setOrDeleteVFValue(font, valAddr + '.name',
-                                         None if name == '' else name)
-        utils.deleteVFValue(font, 'axes.' + k + '.labels.' + val + '.localNames')
-        for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
-            if result['lang' + i] and result[k + 'labels' + i]:
-                for val, name in list(zip(_x := iter(result[k + 'labels' + i].split(',')), _x)):
-                    val = val.replace('.', '\ufdd0')  # escape decimal point with noncharacter
-                    utils.setOrDeleteVFValue(
-                        font, 'axes.' + k + '.labels.' + val + '.localNames.' + result['lang' + i],
-                        None if name == '' else name)
-
-        utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
-        utils.deleteVFValue(font, 'axes.' + k + '.localNames')
-        for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
-            if result['lang' + i]:
                 utils.setOrDeleteVFValue(
-                    font, 'axes.' + k + '.localNames.' + result['lang' + i],
-                    result[k + 'name' + i])
+                    font, 'axes.' + k + '.labels.' + val + '.localNames.' + result['lang' + i],
+                    None if name == '' else name)
+
+
+def _saveResult_localNames(result, k, v):
+    font = fontforge.activeFont()
+    utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
+    utils.deleteVFValue(font, 'axes.' + k + '.localNames')
+    for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
+        if result['lang' + i]:
+            utils.setOrDeleteVFValue(
+                font, 'axes.' + k + '.localNames.' + result['lang' + i],
+                result[k + 'name' + i])
+
+
+def _saveResult(result):
+    for k, v in designAxes.items():
+        _saveResult_values(result, k, v)
+        _saveResult_labels(result, k, v)
+        _saveResult_localNames(result, k, v)
+
     # Debug output
     # print(result)
     # print(font.persistent)
 
 
+# Show dialog
 def designAxesMenu(u, glyph):
     """Menu entry to interactively set design axes for active font
 

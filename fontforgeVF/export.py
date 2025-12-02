@@ -90,6 +90,28 @@ def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument):
         doc.addSource(s)
 
 
+def _designSpaceAxes_labels(labels, a: AxisDescriptor | DiscreteAxisDescriptor):
+    L = []
+    for u, d in labels.items():
+        if not (a.minimum <= u <= a.maximum):
+            fontforge.logWarning('Ignored label {0} = {1} because out of range'.format(
+                a.name, str(u)))
+        elif 'name' not in d:
+            fontforge.logWarning('Ignored label {0} = {1} because no name set'.format(
+                a.name, str(u)))
+        else:
+            al = AxisLabelDescriptor(name=d['name'], userValue=u)
+            if 'elidable' in d:
+                al.elidable = d['elidable']
+            if 'linkedValue' in d:
+                al.linkedUserValue = d['linkedValue']
+            if 'localNames' in d:
+                for lang, name in d['localNames'].items():
+                    al.labelNames[lang] = name
+            L.append(al)
+    return L
+
+
 def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument):
     for k, v in designAxes.items():
         if utils.getVFValue(font, 'axes.' + k + '.active', False):
@@ -107,25 +129,7 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument):
             if val := utils.getVFValue(font, 'axes.' + k + '.order'):
                 a.axisOrdering = val
             if labels := utils.getVFValue(font, 'axes.' + k + '.labels'):
-                L = []
-                for u, d in labels.items():
-                    if not (a.minimum <= u <= a.maximum):
-                        fontforge.logWarning('Ignored label {0} = {1} because out of range'.format(
-                            a.name, str(u)))
-                    elif 'name' not in d:
-                        fontforge.logWarning('Ignored label {0} = {1} because no name set'.format(
-                            a.name, str(u)))
-                    else:
-                        al = AxisLabelDescriptor(name=d['name'], userValue=u)
-                        if 'elidable' in d:
-                            al.elidable = d['elidable']
-                        if 'linkedValue' in d:
-                            al.linkedUserValue = d['linkedValue']
-                        if 'localNames' in d:
-                            for lang, name in d['localNames'].items():
-                                al.labelNames[lang] = name
-                        L.append(al)
-                a.axisLabels = L
+                a.axisLabels = _designSpaceAxes_labels(labels, a)
             doc.addAxis(a)
 
 
