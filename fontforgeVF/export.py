@@ -25,14 +25,14 @@ def _axisMaxValue(defaultFont: fontforge.font, tag: str) -> int | float:
 def _getFontFamilyName(font: fontforge.font, lang: str = 'English (US)') -> str | None:
     name = font.familyname if lang == 'English (US)' else None
     nametype = 0
-    for language, strid, string in font.sfnt_names:
-        if (language, strid) == (lang, 'Family') and nametype < 1:
+    for langname, strid, string in font.sfnt_names:
+        if (langname, strid) == (lang, 'Family') and nametype < 1:
             name = string
             nametype = 1
-        elif (language, strid) == (lang, 'WWS Family') and nametype < 2:
+        elif (langname, strid) == (lang, 'WWS Family') and nametype < 2:
             name = string
             nametype = 2
-        elif (language, strid) == (lang, 'Preferred Family') and nametype < 3:
+        elif (langname, strid) == (lang, 'Preferred Family') and nametype < 3:
             name = string
             nametype = 3
     return name
@@ -41,14 +41,14 @@ def _getFontFamilyName(font: fontforge.font, lang: str = 'English (US)') -> str 
 def _getFontSubFamilyName(font: fontforge.font, lang: str = 'English (US)') -> str | None:
     name = font.weight if lang == 'English (US)' else None
     nametype = 0
-    for language, strid, string in font.sfnt_names:
-        if (language, strid) == (lang, 'SubFamily') and nametype < 1:
+    for langname, strid, string in font.sfnt_names:
+        if (langname, strid) == (lang, 'SubFamily') and nametype < 1:
             name = string
             nametype = 1
-        elif (language, strid) == (lang, 'WWS Subfamily') and nametype < 2:
+        elif (langname, strid) == (lang, 'WWS Subfamily') and nametype < 2:
             name = string
             nametype = 2
-        elif (language, strid) == (lang, 'Preferred Styles') and nametype < 3:
+        elif (langname, strid) == (lang, 'Preferred Styles') and nametype < 3:
             name = string
             nametype = 3
     return name
