@@ -3,9 +3,14 @@ from fontforgeVF.design_axes import designAxes, getAxisValue
 import fontforge
 import tempfile
 from subprocess import run, CalledProcessError
-from fontTools.designspaceLib import \
-    DesignSpaceDocument, SourceDescriptor, \
-    AxisDescriptor, DiscreteAxisDescriptor, AxisLabelDescriptor
+from fontTools.designspaceLib import (
+    DesignSpaceDocument,
+    SourceDescriptor,
+    AxisDescriptor,
+    DiscreteAxisDescriptor,
+    AxisLabelDescriptor,
+)
+from fontTools.ufoLib import UFOReaderWriter
 
 
 def _getSourceFonts(defaultFont: fontforge.font) -> list[fontforge.font]:
@@ -54,12 +59,60 @@ def _getFontSubFamilyName(font: fontforge.font, lang: str = 'English (US)') -> s
     return name
 
 
+def _isFixedPitch(font: fontforge.font) -> bool:
+    return len(
+        set(
+            map(
+                lambda x: x.width,
+                filter(
+                    lambda x: 0x20 <= x.unicode <= 0x7e, font.glyphs()
+                )
+            )
+        )
+    ) == 1
+
+
+class _ufoInfo:
+    from fontTools.ufoLib import fontInfoAttributesVersion3
+    from itertools import repeat
+    _data = dict(zip(list(fontInfoAttributesVersion3), repeat(None)))
+
+    def __getattr__(self, name):
+        if name in self._data:
+            return self._data[name]
+        else:
+            raise AttributeError("attribute '{0}' not found".format(name))
+
+    def __setattr__(self, name, value):
+        if name in self._data:
+            self._data[name] = value
+        else:
+            raise AttributeError("attribute '{0}' not found".format(name))
+
+
 def _outputUfo(font: fontforge.font, outputDir: str, outputFile: str):
+    # import shutil  # for debug
+
     assert outputFile.endswith('.ufo')
-    font.generate(outputDir + '/' + outputFile)
+    ufoPath = outputDir + '/' + outputFile
+    font.generate(ufoPath)
     if not isinstance(font.temporary, dict):
         font.temporary = dict()
-    font.temporary['ufo'] = outputDir + '/' + outputFile
+    font.temporary['ufo'] = ufoPath
+
+    with UFOReaderWriter(ufoPath) as ufo:
+        info = _ufoInfo()
+        ufo.readInfo(info)
+        if _isFixedPitch(font):
+            ufo.postscriptIsFixedPitch = True
+        ufo.styleMapFamilyName = _getFontFamilyName(font)
+        ufo.styleMapStyleName = _getFontSubFamilyName(font)
+        ufo.writeInfo(info)
+
+        # TODO: Add `aalt` feature
+
+    # For debug
+    # shutil.copyfile(ufoPath + "/fontinfo.plist", "./fontinfo.plist")
 
 
 def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument):
