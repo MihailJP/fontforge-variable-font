@@ -168,8 +168,11 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
             info = info[k]
         if key.split('.')[-1] in info:
             del info[key.split('.')[-1]]
-        deleteEmptyDicts(font.persistent["VF"])
-        return True
+            deleteEmptyDicts(font.persistent["VF"])
+            return True
+        else:
+            deleteEmptyDicts(font.persistent["VF"])
+            return False
     else:
         return False
 
