@@ -2,7 +2,6 @@ from fontforgeVF import utils, language
 from fontforgeVF.design_axes import designAxes, getAxisValue
 import fontforge
 import tempfile
-from subprocess import run, CalledProcessError
 from fontTools.designspaceLib import (
     DesignSpaceDocument,
     SourceDescriptor,
@@ -10,7 +9,6 @@ from fontTools.designspaceLib import (
     DiscreteAxisDescriptor,
     AxisLabelDescriptor,
 )
-from fontTools.ufoLib import UFOReaderWriter
 
 
 def _getSourceFonts(defaultFont: fontforge.font) -> list[fontforge.font]:
@@ -90,7 +88,17 @@ class _ufoInfo:
             raise AttributeError("attribute '{0}' not found".format(name))
 
 
+def _allGSUBTags(font: fontforge.font) -> set[str]:
+    tags = []
+    for i in font.gsub_lookups:
+        for j in font.getLookupInfo(i)[2]:
+            tags.append(j[0])
+    return set(tags) - set(['aalt'])  # do not include 'aalt' itself
+
+
 def _outputUfo(font: fontforge.font, outputDir: str, outputFile: str):
+    from fontTools.ufoLib import UFOReaderWriter
+    import re
     # import shutil  # for debug
 
     assert outputFile.endswith('.ufo')
@@ -109,10 +117,23 @@ def _outputUfo(font: fontforge.font, outputDir: str, outputFile: str):
         ufo.styleMapStyleName = _getFontSubFamilyName(font)
         ufo.writeInfo(info)
 
-        # TODO: Add `aalt` feature
+        if _allGSUBTags(font):
+            feat = ufo.readFeatures()
+            existingAalt = ''
+            aaltPattern = r'(?s)\bfeature\s+aalt\s*\{\n?(.*)\}\s*aalt\*;\s*'
+            featPosPattern = r'(?=feature\s+\w{1,4}\s*\{)'
+            removeFromAaltPattern = r'(?m)^\s*(script|language)\s+.*?;\s*'
+            if result := re.search(aaltPattern, feat):
+                existingAalt = re.sub(removeFromAaltPattern, "", result[1])
+                feat = re.sub(aaltPattern, "", feat)
+            aaltInclude = "".join(['  feature ' + x + ';\n' for x in list(_allGSUBTags(font))])
+            newAalt = "feature aalt {\n" + aaltInclude + existingAalt + "} aalt;\n\n"
+            feat = re.sub(featPosPattern, newAalt, feat, count=1)
+            ufo.writeFeatures(feat)
 
     # For debug
     # shutil.copyfile(ufoPath + "/fontinfo.plist", "./fontinfo.plist")
+    # shutil.copyfile(ufoPath + "/features.fea", "./features.fea")
 
 
 def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument):
@@ -195,6 +216,8 @@ def _makeDesignSpace(font: fontforge.font, outputDir: str, outputFile: str):
 
 def exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
     """Exports variable font"""
+    from subprocess import run, CalledProcessError
+
     assert dialogResult['file'].endswith('.ttf')
     with tempfile.TemporaryDirectory() as tmpdir:
         s = 0
