@@ -19,17 +19,35 @@ jobs:
         python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout fontforgeVF
+      uses: actions/checkout@v6
+    - name: Checkout Fontforge
+      uses: actions/checkout@v6
+      with:
+        repository: MihailJP/fontforge
+        path: fontforge
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        sudo apt install fontforge
+        sudo apt install libjpeg-dev libtiff5-dev libpng-dev libfreetype-dev libgif-dev \
+            libgtk-3-dev libxml2-dev libpango1.0-dev libcairo2-dev libspiro-dev libwoff-dev \
+            python3-dev ninja-build cmake build-essential gettext
         python3 -m pip install --upgrade pip
         python3 -m pip install flake8 pytest build
         if [ -f requirements.txt ]; then pip3 install -r requirements.txt; fi
+    - name: Build and install Fontforge
+      run: |
+        cd fontforge
+        mkdir build
+        cd build
+        cmake -GNinja -DENABLE_GUI=OFF ..
+        ninja
+        sudo ninja install
+        cd ../..
+        rm -rf fontforge
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -38,12 +56,13 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
+        for i in $(find /usr/local -type d -name *-packages); do export PYTHONPATH=$i:$PYTHONPATH; done
         pytest
     - name: Build
       run: |
         python3 -m build
     - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v5.0.0
+      uses: actions/upload-artifact@v5
       with:
         name: Python ${{ matrix.python-version }}
         path: dist
