@@ -18,20 +18,21 @@ def test_intOrFloat(param, expectedVal, expectedType):
     assert intOrFloat(param) == expectedVal
 
 
-@pytest.mark.parametrize(('persistent'), [
-    (None,),
-    ("spam",),
-    ({},),
+@pytest.mark.parametrize(('persistent', 'expected'), [
+    (None, {'VF': {}}),
+    ("spam", {'VF': {}}),
+    ({}, {'VF': {}}),
+    ({'spam': 'ham'}, {'spam': 'ham', 'VF': {}}),
 ])
-def test_initPersistentDict(persistent):
+def test_initPersistentDict(persistent, expected):
     from fontforgeVF.utils import initPersistentDict
-    font = fontforge.font()
-    font.persistent = persistent
-    initPersistentDict(font)
-    assert isinstance(font.persistent, dict)
-    assert 'VF' in font.persistent
-    assert isinstance(font.persistent['VF'], dict)
-    font.close()
+    try:
+        font = fontforge.font()
+        font.persistent = persistent
+        initPersistentDict(font)
+        assert font.persistent == expected
+    finally:
+        font.close()
 
 
 @pytest.mark.parametrize(('persistent', 'expected'), [
@@ -42,10 +43,12 @@ def test_initPersistentDict(persistent):
 ])
 def test_vfInfoExists(persistent, expected):
     from fontforgeVF.utils import vfInfoExists
-    font = fontforge.font()
-    font.persistent = persistent
-    assert vfInfoExists(font) == expected
-    font.close()
+    try:
+        font = fontforge.font()
+        font.persistent = persistent
+        assert vfInfoExists(font) == expected
+    finally:
+        font.close()
 
 
 @pytest.mark.parametrize(('persistent', 'key', 'default', 'expected'), [
@@ -60,10 +63,12 @@ def test_vfInfoExists(persistent, expected):
 ])
 def test_getVFValue(persistent, key, default, expected):
     from fontforgeVF.utils import getVFValue
-    font = fontforge.font()
-    font.persistent = persistent
-    assert getVFValue(font, key, default) == expected
-    font.close()
+    try:
+        font = fontforge.font()
+        font.persistent = persistent
+        assert getVFValue(font, key, default) == expected
+    finally:
+        font.close()
 
 
 @pytest.mark.parametrize(('persistent', 'key', 'val', 'expectedPersistent'), [
@@ -76,11 +81,13 @@ def test_getVFValue(persistent, key, default, expected):
 ])
 def test_setVFValue(persistent, key, val, expectedPersistent):
     from fontforgeVF.utils import setVFValue
-    font = fontforge.font()
-    font.persistent = persistent
-    setVFValue(font, key, val)
-    assert font.persistent == expectedPersistent
-    font.close()
+    try:
+        font = fontforge.font()
+        font.persistent = persistent
+        setVFValue(font, key, val)
+        assert font.persistent == expectedPersistent
+    finally:
+        font.close()
 
 
 @pytest.mark.parametrize(('param', 'expected'), [
@@ -112,11 +119,13 @@ def test_deleteEmptyDicts(param, expected):
 ])
 def test_deleteVFValue(persistent, key, expected, expectedPersistent):
     from fontforgeVF.utils import deleteVFValue
-    font = fontforge.font()
-    font.persistent = persistent
-    assert deleteVFValue(font, key) == expected
-    assert font.persistent == expectedPersistent
-    font.close()
+    try:
+        font = fontforge.font()
+        font.persistent = persistent
+        assert deleteVFValue(font, key) == expected
+        assert font.persistent == expectedPersistent
+    finally:
+        font.close()
 
 
 @pytest.mark.parametrize(('persistent', 'key', 'val', 'expectedPersistent'), [
@@ -138,8 +147,10 @@ def test_deleteVFValue(persistent, key, expected, expectedPersistent):
 ])
 def test_setOrDeleteVFValue(persistent, key, val, expectedPersistent):
     from fontforgeVF.utils import setOrDeleteVFValue
-    font = fontforge.font()
-    font.persistent = persistent
-    setOrDeleteVFValue(font, key, val)
-    assert font.persistent == expectedPersistent
-    font.close()
+    try:
+        font = fontforge.font()
+        font.persistent = persistent
+        setOrDeleteVFValue(font, key, val)
+        assert font.persistent == expectedPersistent
+    finally:
+        font.close()
