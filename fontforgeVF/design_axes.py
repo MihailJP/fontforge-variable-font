@@ -23,7 +23,7 @@ def _searchCustomAxis(font: fontforge.font, tag: str) -> str | None:
         return tag
     else:
         for k, v in designAxes.items():
-            if k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.tag', '') == tag:
+            if k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.tag', '').rstrip() == tag.rstrip():
                 return k
         return None
 
