@@ -2,6 +2,11 @@ from fontforgeVF import utils, language
 import fontforge
 
 
+__all__ = [
+    "getAxisValue",
+]
+
+
 def _getWidthFromOS2Width(font: fontforge.font) -> int | float:
     return [50, 62.5, 75, 87.5, 100, 112.5, 125, 150, 200][font.os2_width - 1]
 

@@ -1,6 +1,11 @@
 from fontTools.ttLib.tables._n_a_m_e import _WINDOWS_LANGUAGES
 
 
+__all__ = [
+    'languageCodeIterator',
+    'languageCodeReverseLookup',
+]
+
 languageData = {
     1: {
         'name': 'Arabic',

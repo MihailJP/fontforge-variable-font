@@ -11,6 +11,11 @@ from fontTools.designspaceLib import (
 )
 
 
+__all__ = [
+    "exportVariableFont",
+]
+
+
 def _getSourceFonts(defaultFont: fontforge.font) -> list[fontforge.font]:
     return list(filter(lambda f: f.familyname == defaultFont.familyname, fontforge.fonts()))
 
@@ -214,11 +219,30 @@ def _makeDesignSpace(font: fontforge.font, outputDir: str, outputFile: str):
     doc.write(outputDir + '/' + outputFile)
 
 
-def exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
-    """Exports variable font"""
+def exportVariableFont(font: fontforge.font, filename, decomposeNestedRefs: bool = False):
+    """Exports variable font
+
+    Before this function being called, make sure all masters are open and
+    parameters of design axes and instances are set, and also family name
+    is consistent. VF-specific metadata must be stored in
+    ``font.persistent['VF']``. Other metadata can be set as usual.
+
+    This function uses 'fonttools' module and calls 'fontmake' tool as
+    the backend to export the variable font.
+
+    :param font: Main font which font-family-wide parameters are set.
+  . Fontforge font object.
+    :param filename: Output file name. Must end with '.ttf'.
+    :param decomposeNestedRefs: Optional. Nested references are known to
+    cause problems in certain environments; if ``True``, resulting font
+    will decompose such references. Defaults to ``False``.
+    :raises ``CalledProcessError``: 'fontmake' ended abnormally. For
+    example, it is an error if inconsistent number of points or contours
+    among masters.
+    """
     from subprocess import run, CalledProcessError
 
-    assert dialogResult['file'].endswith('.ttf')
+    assert filename.endswith('.ttf')
     with tempfile.TemporaryDirectory() as tmpdir:
         s = 0
         for f in _getSourceFonts(font):
@@ -226,21 +250,31 @@ def exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
             _outputUfo(font, tmpdir, 'source' + str(s) + '.ufo')
         _makeDesignSpace(font, tmpdir, 'vf.designspace')
         options = []
-        if 'options' in dialogResult:
-            for opt in dialogResult['options']:
-                if opt == 'nestedRefs':
-                    options.append('-f')
+        if decomposeNestedRefs:
+            options.append('-f')
         try:
             run(['fontmake'] + options + [
                 '-m', tmpdir + '/vf.designspace',
-                '-o', 'variable', '--output-path', dialogResult['file']],
+                '-o', 'variable', '--output-path', filename],
                 check=True, text=True, capture_output=True)
         except CalledProcessError as e:
-            fontforge.logWarning(e.stderr)
-            fontforge.postError(
-                "Failed to export",
-                "fontmake failed with return code {0}".format(e.returncode)
-            )
+            if fontforge.hasUserInterface():
+                fontforge.logWarning(e.stderr)
+                fontforge.postError(
+                    "Failed to export",
+                    "fontmake failed with return code {0}".format(e.returncode)
+                )
+            else:
+                raise
+
+
+def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
+    decomposeNestedRefs = False
+    if 'options' in dialogResult:
+        for opt in dialogResult['options']:
+            if opt == 'nestedRefs':
+                decomposeNestedRefs = True
+    exportVariableFont(font, dialogResult['file'], decomposeNestedRefs)
 
 
 def _saveMenuDialog(font: fontforge.font) -> dict | None:
@@ -265,8 +299,8 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
 
 def saveMenu(u, glyph):
     if result := _saveMenuDialog(fontforge.activeFont()):
-        exportVariableFont(fontforge.activeFont(), result)
+        _exportVariableFont(fontforge.activeFont(), result)
 
 
 def saveEnable(u, glyph):
-    return True
+    return utils.vfInfoExists(fontforge.activeFont())

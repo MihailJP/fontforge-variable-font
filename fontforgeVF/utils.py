@@ -1,6 +1,18 @@
 import fontforge
 
 
+__all__ = [
+    "intOrFloat",
+    "initPersistentDict",
+    "vfInfoExists",
+    "getVFValue",
+    "setVFValue",
+    "deleteEmptyDicts",
+    "deleteVFValue",
+    "setOrDeleteVFValue",
+]
+
+
 def intOrFloat(val):
     """Convert to ``int`` or ``float`` if possible
 
