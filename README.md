@@ -9,6 +9,9 @@ frontend of [fontmake](https://pypi.org/project/fontmake/) and
 [fonttools](https://pypi.org/project/fonttools/) so that variable fonts can
 be created through Fontforge interface.
 
+This module can also export to WOFF2; in this case the
+[woff2](https://github.com/google/woff2) tool will be used as backend.
+
 This module requires Python 3.10 or later.
 
 Install
@@ -83,6 +86,11 @@ Currently available options:
 
 > [!TIP]
 > You do not have to add 'aalt' lookups manually.
+
+> [!TIP]
+> To generate web font (instead of TTF), specify output file name ending
+> with '.woff2'; in this case the plugin calls ``woff2_compress`` after
+> generating TTF.
 
 > [!IMPORTANT]
 > If the font family has both roman (non-italic) and italic styles, you
@@ -299,6 +307,9 @@ fontforgeVF.setVFValue(fontCL, "axes.custom1.localNames.de", "Benutzerdefinierte
 
 # Export TTF
 fontforgeVF.export(fontCL, 'MyFont.ttf')
+
+# Export Webfont
+fontforgeVF.export(fontCL, 'MyFont.woff2')
 
 # In case you want to drop the VF info
 fontforgeVF.deleteVFInfo(fontCL)

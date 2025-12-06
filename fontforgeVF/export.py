@@ -281,7 +281,46 @@ def _makeDesignSpace(
     # shutil.copyfile(str(outputDir) + '/' + str(outputFile), "./" + str(outputFile))
 
 
+def _checkExtensionTtfOrWoff2(filename: str | PathLike) -> str:
+    if str(filename).endswith('.ttf'):
+        return 'ttf'
+    elif str(filename).endswith('.woff2'):
+        return 'woff2'
+    else:
+        raise ValueError("'" + str(filename) + "' has unexpected extension")
+
+
 def _doExportVF(
+    font: fontforge.font,
+    tmpdir,
+    filename: str | PathLike,
+    designSpacePath: str | PathLike,
+    options: list = []
+):
+    from subprocess import run
+    from sys import stderr
+    from pathlib import Path
+    from shutil import move
+
+    outputFile = str(filename)
+    if _checkExtensionTtfOrWoff2(filename) == 'woff2':
+        outputFile = str(Path(tmpdir, Path(filename).stem)) + '.ttf'
+    result = run(['fontmake'] + options + [
+        '-m', designSpacePath,
+        '-o', 'variable', '--output-path', outputFile],
+        check=True, text=True, capture_output=fontforge.hasUserInterface())
+    if fontforge.hasUserInterface():
+        stderr.write(result.stderr)
+    if _checkExtensionTtfOrWoff2(filename) == 'woff2':
+        result = run(
+            ['woff2_compress', outputFile],
+            check=True, text=True, capture_output=fontforge.hasUserInterface())
+        if fontforge.hasUserInterface():
+            stderr.write(result.stderr)
+        move(outputFile[:-4] + '.woff2', filename)
+
+
+def _exportVF(
     font: fontforge.font,
     tmpdir,
     filename: str | PathLike,
@@ -289,29 +328,18 @@ def _doExportVF(
     options: list = [],
     need2files: bool = False
 ):
-    from subprocess import run, CalledProcessError
-    from sys import stderr
+    from subprocess import CalledProcessError
 
     try:
-        result = run(['fontmake'] + options + [
-            '-m', tmpdir + '/vf.designspace',
-            '-o', 'variable', '--output-path', str(filename)],
-            check=True, text=True, capture_output=fontforge.hasUserInterface())
-        if fontforge.hasUserInterface():
-            stderr.write(result.stderr)
+        _doExportVF(font, tmpdir, filename, tmpdir + '/vf.designspace', options)
         if need2files and italicFilename:
-            result = run(['fontmake'] + options + [
-                '-m', tmpdir + '/vf2.designspace',
-                '-o', 'variable', '--output-path', str(italicFilename)],
-                check=True, text=True, capture_output=fontforge.hasUserInterface())
-            if fontforge.hasUserInterface():
-                stderr.write(result.stderr)
+            _doExportVF(font, tmpdir, italicFilename, tmpdir + '/vf2.designspace', options)
     except CalledProcessError as e:
         if fontforge.hasUserInterface():
             fontforge.logWarning(e.stderr)
             fontforge.postError(
                 "Failed to export",
-                "fontmake failed with return code {0}".format(e.returncode)
+                "'{0}' failed with return code {1}".format(e.cmd.split(' ')[0], e.returncode)
             )
         else:
             raise
@@ -319,7 +347,7 @@ def _doExportVF(
         if fontforge.hasUserInterface():
             fontforge.postNotice(
                 "Finished",
-                "fontmake finished to output variable fonts"
+                "Finished to output variable fonts"
             )
 
 
@@ -358,7 +386,7 @@ def exportVariableFont(
     function fix this first.
 
     :param font: Main font which font-family-wide parameters are set.
-  . Fontforge font object.
+    Fontforge font object.
     :param filename: Output file name. Must end with '.ttf'.
     :param italicFilename: Secondary output file name for italic. Must
     end with '.ttf'. Required if the font family has both roman and
@@ -367,15 +395,18 @@ def exportVariableFont(
     cause problems in certain environments; if ``True``, resulting font
     will decompose such references. Defaults to ``False``.
     :param addAalt: Adds 'aalt' feature. Defaults to ``False``.
+    :raises ``ValueError``: ``filename`` or ``italicFilename`` ends with
+    unexpected extension.
     :raises ``CalledProcessError``: 'fontmake' ended abnormally. For
     example, it is an error if inconsistent number of points or contours
     among masters.
     """
-    assert str(filename).endswith('.ttf')
+    _checkExtensionTtfOrWoff2(filename)
     need2files = False
     if _hasBothRomanAndItalic(font):
         need2files = True
-        assert (italicFilename is None) or (str(italicFilename).endswith('.ttf'))
+        if italicFilename is not None:
+            _checkExtensionTtfOrWoff2(italicFilename)
     with tempfile.TemporaryDirectory() as tmpdir:
         s = 0
         for f in _getSourceFonts(font):
@@ -390,7 +421,7 @@ def exportVariableFont(
         options = []
         if decomposeNestedRefs:
             options.append('-f')
-        _doExportVF(font, tmpdir, filename, italicFilename, options, need2files)
+        _exportVF(font, tmpdir, filename, italicFilename, options, need2files)
 
 
 def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
@@ -416,14 +447,14 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
                 'default':
                     font.default_base_filename + '.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '.ttf',
-                'filter': '*.ttf',
+                'filter': '*.{ttf,woff2}',
             },
             {
                 'type': 'savepath', 'question': 'Italic VF:', 'tag': 'file2',
                 'default':
                     font.default_base_filename + '-Italic.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '-Italic.ttf',
-                'filter': '*.ttf',
+                'filter': '*.{ttf,woff2}',
             },
         ]
     else:
