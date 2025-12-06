@@ -59,6 +59,28 @@ menu which is dedicated for plugins.
 
 Shows a dialog where you can set output file name and other options.
 
+In order to build a variable font, SFD must be converted into UFO and
+create a designspace document. This plugin will do this first, and
+then required modification. The required files will be created in a
+temporary directory, and deleted after everything is done. So users
+won't see intermediate files.
+
+Fontforge may export with ``postscriptIsFixedPitch`` flag clear when
+it should be set. The plugin checks if monospaced font is intended and
+fix the flag. Unlike Fontforge itself, only U+0020 to U+007E will be
+checked their width, because combining marks may have zero width even
+for monospaced fonts.
+
+In a feature file, 'aalt' feature is specially treated. Fontforge may
+export incompatible 'aalt' feature (concretely 'script' or 'language'
+instructions must not be included unlike other features.) This
+function fix this first.
+
+Currently available options:
+
+- Remove nested refs: Tell fontmake to decompose nested references into simple
+  ones. Nested references are known to cause problems in certain environments.
+
 > [!IMPORTANT]
 > You need all masters open before you use this menu item. Also, make
 > sure the family name is consistent among the masters, or such masters

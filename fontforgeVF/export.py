@@ -2,6 +2,7 @@ from fontforgeVF import utils, language
 from fontforgeVF.design_axes import designAxes, getAxisValue
 import fontforge
 import tempfile
+from os import PathLike
 from fontTools.designspaceLib import (
     DesignSpaceDocument,
     SourceDescriptor,
@@ -93,6 +94,14 @@ class _ufoInfo:
             raise AttributeError("attribute '{0}' not found".format(name))
 
 
+def _aaltExists(font: fontforge.font) -> bool:
+    tags = []
+    for i in font.gsub_lookups:
+        for j in font.getLookupInfo(i)[2]:
+            tags.append(j[0])
+    return 'aalt' in tags
+
+
 def _allGSUBTags(font: fontforge.font) -> set[str]:
     tags = []
     for i in font.gsub_lookups:
@@ -101,13 +110,13 @@ def _allGSUBTags(font: fontforge.font) -> set[str]:
     return set(tags) - set(['aalt'])  # do not include 'aalt' itself
 
 
-def _outputUfo(font: fontforge.font, outputDir: str, outputFile: str):
+def _outputUfo(font: fontforge.font, outputDir: str | PathLike, outputFile: str | PathLike, aalt: bool):
     from fontTools.ufoLib import UFOReaderWriter
     import re
     # import shutil  # for debug
 
     assert outputFile.endswith('.ufo')
-    ufoPath = outputDir + '/' + outputFile
+    ufoPath = str(outputDir) + '/' + str(outputFile)
     font.generate(ufoPath)
     if not isinstance(font.temporary, dict):
         font.temporary = dict()
@@ -122,7 +131,7 @@ def _outputUfo(font: fontforge.font, outputDir: str, outputFile: str):
         ufo.styleMapStyleName = _getFontSubFamilyName(font)
         ufo.writeInfo(info)
 
-        if _allGSUBTags(font):
+        if _aaltExists(font) or _allGSUBTags(font):
             feat = ufo.readFeatures()
             existingAalt = ''
             aaltPattern = r'(?s)\bfeature\s+aalt\s*\{\n?(.*)\}\s*aalt\*;\s*'
@@ -131,8 +140,12 @@ def _outputUfo(font: fontforge.font, outputDir: str, outputFile: str):
             if result := re.search(aaltPattern, feat):
                 existingAalt = re.sub(removeFromAaltPattern, "", result[1])
                 feat = re.sub(aaltPattern, "", feat)
-            aaltInclude = "".join(['  feature ' + x + ';\n' for x in list(_allGSUBTags(font))])
-            newAalt = "feature aalt {\n" + aaltInclude + existingAalt + "} aalt;\n\n"
+            aaltInclude = ''
+            if aalt:
+                aaltInclude = "".join(['  feature ' + x + ';\n' for x in list(_allGSUBTags(font))])
+            newAalt = ''
+            if aaltInclude or existingAalt:
+                newAalt = "feature aalt {\n" + aaltInclude + existingAalt + "} aalt;\n\n"
             feat = re.sub(featPosPattern, newAalt, feat, count=1)
             ufo.writeFeatures(feat)
 
@@ -212,14 +225,19 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument):
             doc.addAxis(a)
 
 
-def _makeDesignSpace(font: fontforge.font, outputDir: str, outputFile: str):
+def _makeDesignSpace(font: fontforge.font, outputDir: str | PathLike, outputFile: str | PathLike):
     doc = DesignSpaceDocument()
     _designSpaceSources(font, doc)
     _designSpaceAxes(font, doc)
-    doc.write(outputDir + '/' + outputFile)
+    doc.write(str(outputDir) + '/' + str(outputFile))
 
 
-def exportVariableFont(font: fontforge.font, filename, decomposeNestedRefs: bool = False):
+def exportVariableFont(
+    font: fontforge.font,
+    filename: str | PathLike,
+    decomposeNestedRefs: bool = False,
+    addAalt: bool = False
+):
     """Exports variable font
 
     Before this function being called, make sure all masters are open and
@@ -230,24 +248,42 @@ def exportVariableFont(font: fontforge.font, filename, decomposeNestedRefs: bool
     This function uses 'fonttools' module and calls 'fontmake' tool as
     the backend to export the variable font.
 
+    In order to build a variable font, SFD must be converted into UFO and
+    create a designspace document. This function will do this first, and
+    then required modification. The required files will be created in a
+    temporary directory, and deleted after everything is done. So users
+    won't see intermediate files.
+
+    Fontforge may export with ``postscriptIsFixedPitch`` flag clear when
+    it should be set. The plugin checks if monospaced font is intended and
+    fix the flag. Unlike Fontforge itself, only U+0020 to U+007E will be
+    checked their width, because combining marks may have zero width even
+    for monospaced fonts.
+
+    In a feature file, 'aalt' feature is specially treated. Fontforge may
+    export incompatible 'aalt' feature (concretely 'script' or 'language'
+    instructions must not be included unlike other features.) This
+    function fix this first.
+
     :param font: Main font which font-family-wide parameters are set.
   . Fontforge font object.
     :param filename: Output file name. Must end with '.ttf'.
     :param decomposeNestedRefs: Optional. Nested references are known to
     cause problems in certain environments; if ``True``, resulting font
     will decompose such references. Defaults to ``False``.
+    :param addAalt: Adds 'aalt' feature. Defaults to ``False``.
     :raises ``CalledProcessError``: 'fontmake' ended abnormally. For
     example, it is an error if inconsistent number of points or contours
     among masters.
     """
     from subprocess import run, CalledProcessError
 
-    assert filename.endswith('.ttf')
+    assert str(filename).endswith('.ttf')
     with tempfile.TemporaryDirectory() as tmpdir:
         s = 0
         for f in _getSourceFonts(font):
             s += 1
-            _outputUfo(font, tmpdir, 'source' + str(s) + '.ufo')
+            _outputUfo(font, tmpdir, 'source' + str(s) + '.ufo', addAalt)
         _makeDesignSpace(font, tmpdir, 'vf.designspace')
         options = []
         if decomposeNestedRefs:
@@ -255,7 +291,7 @@ def exportVariableFont(font: fontforge.font, filename, decomposeNestedRefs: bool
         try:
             run(['fontmake'] + options + [
                 '-m', tmpdir + '/vf.designspace',
-                '-o', 'variable', '--output-path', filename],
+                '-o', 'variable', '--output-path', str(filename)],
                 check=True, text=True, capture_output=True)
         except CalledProcessError as e:
             if fontforge.hasUserInterface():
@@ -270,11 +306,14 @@ def exportVariableFont(font: fontforge.font, filename, decomposeNestedRefs: bool
 
 def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
     decomposeNestedRefs = False
+    addAalt = False
     if 'options' in dialogResult:
         for opt in dialogResult['options']:
             if opt == 'nestedRefs':
                 decomposeNestedRefs = True
-    exportVariableFont(font, dialogResult['file'], decomposeNestedRefs)
+            if opt == 'aalt':
+                addAalt = True
+    exportVariableFont(font, dialogResult['file'], decomposeNestedRefs, addAalt)
 
 
 def _saveMenuDialog(font: fontforge.font) -> dict | None:
@@ -291,6 +330,7 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
             'checks': True, 'multiple': True,
             'answers': [
                 {'name': 'Remove nested refs', 'tag': 'nestedRefs'},
+                {'name': "Add 'aalt' feature", 'tag': 'aalt'},
             ],
         },
     ]
