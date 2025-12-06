@@ -47,7 +47,6 @@ menu which is dedicated for plugins.
   - Open a variable font... (not implemented)
   - Generate a variable font...
   - Design axes...
-  - Instance list... (not implemented)
   - Delete VF info
 
 #### Open a variable font
@@ -197,11 +196,6 @@ extended if already more than 4 languages are defined.
   * Axis value
   * Name
 
-#### Instance list
-
-> [!NOTE]
-> This item is not yet implemented.
-
 #### Delete VF info
 
 Deletes VF data.
@@ -302,8 +296,6 @@ fontforgeVF.setVFValue(fontCL, "axes.custom1.tag", "abc")  # needed for custom a
 fontforgeVF.setVFValue(fontCL, "axes.custom1.name", "User-defined axis")
 fontforgeVF.setVFValue(fontCL, "axes.custom1.order", 3)
 fontforgeVF.setVFValue(fontCL, "axes.custom1.localNames.de", "Benutzerdefinierte Achse")
-
-# Instances: not implemented
 
 # Export TTF
 fontforgeVF.export(fontCL, 'MyFont.ttf')

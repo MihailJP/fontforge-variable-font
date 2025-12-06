@@ -10,14 +10,6 @@ def loadEnable(u, glyph):
     return False
 
 
-def instanceMenu(u, glyph):
-    fontforge.postNotice("This is a mockup", "Not yet implemented!")
-
-
-def instanceEnable(u, glyph):
-    return False
-
-
 def fontforge_plugin_init(**kw):
     fontforge.registerMenuItem(
         callback=loadMenu,
@@ -39,13 +31,6 @@ def fontforge_plugin_init(**kw):
         context="Font",
         submenu="_Variable Font",
         name="Design _axes..."
-    )
-    fontforge.registerMenuItem(
-        callback=instanceMenu,
-        enable=instanceEnable,
-        context="Font",
-        submenu="_Variable Font",
-        name="_Instance list..."
     )
     fontforge.registerMenuItem(
         callback=delete.deleteVFInfoMenu,
