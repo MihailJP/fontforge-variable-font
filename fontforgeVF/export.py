@@ -118,9 +118,11 @@ def _outputUfo(font: fontforge.font, outputDir: str | PathLike, outputFile: str 
     assert outputFile.endswith('.ufo')
     ufoPath = str(outputDir) + '/' + str(outputFile)
     font.generate(ufoPath)
+    changed = font.changed
     if not isinstance(font.temporary, dict):
         font.temporary = dict()
     font.temporary['ufo'] = ufoPath
+    font.changed = changed
 
     with UFOReaderWriter(ufoPath) as ufo:
         info = _ufoInfo()
