@@ -17,18 +17,36 @@ __all__ = [
 ]
 
 
-def _getSourceFonts(defaultFont: fontforge.font) -> list[fontforge.font]:
-    return list(filter(lambda f: f.familyname == defaultFont.familyname, fontforge.fonts()))
+def _getSourceFonts(defaultFont: fontforge.font, filterItalicRoman: bool | None = None) -> list[fontforge.font]:
+    tmpIter = filter(lambda f: f.familyname == defaultFont.familyname, fontforge.fonts())
+    if filterItalicRoman is None:
+        return list(tmpIter)
+    else:
+        return list(filter(lambda f: getAxisValue(f, 'ital') == filterItalicRoman, tmpIter))
 
 
-def _axisMinValue(defaultFont: fontforge.font, tag: str) -> int | float:
-    return min(filter(lambda x: x is not None,
-                      map(lambda f: getAxisValue(f, tag), _getSourceFonts(defaultFont))))
+def _axisMinValue(defaultFont: fontforge.font, tag: str, filterItalicRoman: bool | None = None) -> int | float:
+    return min(
+        filter(
+            lambda x: x is not None,
+            map(
+                lambda f: getAxisValue(f, tag),
+                _getSourceFonts(defaultFont, filterItalicRoman)
+            )
+        )
+    )
 
 
-def _axisMaxValue(defaultFont: fontforge.font, tag: str) -> int | float:
-    return max(filter(lambda x: x is not None,
-                      map(lambda f: getAxisValue(f, tag), _getSourceFonts(defaultFont))))
+def _axisMaxValue(defaultFont: fontforge.font, tag: str, filterItalicRoman: bool | None = None) -> int | float:
+    return max(
+        filter(
+            lambda x: x is not None,
+            map(
+                lambda f: getAxisValue(f, tag),
+                _getSourceFonts(defaultFont, filterItalicRoman)
+            )
+        )
+    )
 
 
 def _getFontFamilyName(font: fontforge.font, lang: str = 'English (US)') -> str | None:
@@ -76,6 +94,13 @@ def _isFixedPitch(font: fontforge.font) -> bool:
     ) == 1
 
 
+def _hasBothRomanAndItalic(font: fontforge.font) -> bool:
+    if utils.getVFValue(font, 'axes.ital.active', False):
+        if _axisMinValue(font, 'ital') == 0 and _axisMaxValue(font, 'ital') == 1:
+            return True
+    return False
+
+
 class _ufoInfo:
     from fontTools.ufoLib import fontInfoAttributesVersion3
     from itertools import repeat
@@ -117,12 +142,17 @@ def _outputUfo(font: fontforge.font, outputDir: str | PathLike, outputFile: str 
 
     assert outputFile.endswith('.ufo')
     ufoPath = str(outputDir) + '/' + str(outputFile)
-    font.generate(ufoPath)
     changed = font.changed
+    unlinkRmOvrlpSave = {}
+    for glyph in font.glyphs():
+        unlinkRmOvrlpSave[glyph.glyphname] = glyph.unlinkRmOvrlpSave
+        glyph.unlinkRmOvrlpSave = False
+    font.generate(ufoPath)
+    for glyph in font.glyphs():
+        glyph.unlinkRmOvrlpSave = unlinkRmOvrlpSave[glyph.glyphname]
     if not isinstance(font.temporary, dict):
         font.temporary = dict()
     font.temporary['ufo'] = ufoPath
-    font.changed = changed
 
     with UFOReaderWriter(ufoPath) as ufo:
         info = _ufoInfo()
@@ -151,13 +181,16 @@ def _outputUfo(font: fontforge.font, outputDir: str | PathLike, outputFile: str 
             feat = re.sub(featPosPattern, newAalt, feat, count=1)
             ufo.writeFeatures(feat)
 
+    font.changed = changed
+
     # For debug
     # shutil.copyfile(ufoPath + "/fontinfo.plist", "./fontinfo.plist")
     # shutil.copyfile(ufoPath + "/features.fea", "./features.fea")
 
 
-def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument):
-    for f in _getSourceFonts(font):
+def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument, filterItalicRoman: bool | None = None):
+    # print(_getSourceFonts(font))
+    for f in _getSourceFonts(font, filterItalicRoman):
         s = SourceDescriptor()
         s.path = f.temporary['ufo']
         if f is font:
@@ -206,14 +239,18 @@ def _designSpaceAxes_labels(labels, a: AxisDescriptor | DiscreteAxisDescriptor):
     return L
 
 
-def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument):
+def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument, filterItalicRoman: bool | None = None):
     for k, v in designAxes.items():
         if utils.getVFValue(font, 'axes.' + k + '.active', False):
             a = DiscreteAxisDescriptor() if k == 'ital' else AxisDescriptor()
             a.tag = utils.getVFValue(font, 'axes.' + k + '.tag', '????') \
                 if k.startswith('custom') else k
-            a.minimum = _axisMinValue(font, a.tag)
-            a.maximum = _axisMaxValue(font, a.tag)
+            if k == 'ital' and filterItalicRoman is not None:
+                a.minimum = 1 if filterItalicRoman else _axisMinValue(font, a.tag)
+                a.maximum = 0 if not filterItalicRoman else _axisMaxValue(font, a.tag)
+            else:
+                a.minimum = _axisMinValue(font, a.tag)
+                a.maximum = _axisMaxValue(font, a.tag)
             a.default = getAxisValue(font, a.tag)
             a.name = utils.getVFValue(font, 'axes.' + k + '.name', v['name'])
             for L, n in utils.getVFValue(font, 'axes.' + k + '.localNames', {}).items():
@@ -227,16 +264,69 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument):
             doc.addAxis(a)
 
 
-def _makeDesignSpace(font: fontforge.font, outputDir: str | PathLike, outputFile: str | PathLike):
+def _makeDesignSpace(
+    font: fontforge.font,
+    outputDir: str | PathLike,
+    outputFile: str | PathLike,
+    filterItalicRoman: bool | None = None
+):
+    # import shutil  # for debug
+
     doc = DesignSpaceDocument()
-    _designSpaceSources(font, doc)
-    _designSpaceAxes(font, doc)
+    _designSpaceSources(font, doc, filterItalicRoman)
+    _designSpaceAxes(font, doc, filterItalicRoman)
     doc.write(str(outputDir) + '/' + str(outputFile))
+
+    # For debug
+    # shutil.copyfile(str(outputDir) + '/' + str(outputFile), "./" + str(outputFile))
+
+
+def _doExportVF(
+    font: fontforge.font,
+    tmpdir,
+    filename: str | PathLike,
+    italicFilename: str | PathLike | None = None,
+    options: list = [],
+    need2files: bool = False
+):
+    from subprocess import run, CalledProcessError
+    from sys import stderr
+
+    try:
+        result = run(['fontmake'] + options + [
+            '-m', tmpdir + '/vf.designspace',
+            '-o', 'variable', '--output-path', str(filename)],
+            check=True, text=True, capture_output=fontforge.hasUserInterface())
+        if fontforge.hasUserInterface():
+            stderr.write(result.stderr)
+        if need2files and italicFilename:
+            result = run(['fontmake'] + options + [
+                '-m', tmpdir + '/vf2.designspace',
+                '-o', 'variable', '--output-path', str(italicFilename)],
+                check=True, text=True, capture_output=fontforge.hasUserInterface())
+            if fontforge.hasUserInterface():
+                stderr.write(result.stderr)
+    except CalledProcessError as e:
+        if fontforge.hasUserInterface():
+            fontforge.logWarning(e.stderr)
+            fontforge.postError(
+                "Failed to export",
+                "fontmake failed with return code {0}".format(e.returncode)
+            )
+        else:
+            raise
+    else:
+        if fontforge.hasUserInterface():
+            fontforge.postNotice(
+                "Finished",
+                "fontmake finished to output variable fonts"
+            )
 
 
 def exportVariableFont(
     font: fontforge.font,
     filename: str | PathLike,
+    italicFilename: str | PathLike | None = None,
     decomposeNestedRefs: bool = False,
     addAalt: bool = False
 ):
@@ -270,6 +360,9 @@ def exportVariableFont(
     :param font: Main font which font-family-wide parameters are set.
   . Fontforge font object.
     :param filename: Output file name. Must end with '.ttf'.
+    :param italicFilename: Secondary output file name for italic. Must
+    end with '.ttf'. Required if the font family has both roman and
+    italic styles
     :param decomposeNestedRefs: Optional. Nested references are known to
     cause problems in certain environments; if ``True``, resulting font
     will decompose such references. Defaults to ``False``.
@@ -278,55 +371,72 @@ def exportVariableFont(
     example, it is an error if inconsistent number of points or contours
     among masters.
     """
-    from subprocess import run, CalledProcessError
-
     assert str(filename).endswith('.ttf')
+    need2files = False
+    if _hasBothRomanAndItalic(font):
+        need2files = True
+        assert (italicFilename is None) or (str(italicFilename).endswith('.ttf'))
     with tempfile.TemporaryDirectory() as tmpdir:
         s = 0
         for f in _getSourceFonts(font):
             s += 1
             _outputUfo(f, tmpdir, 'source' + str(s) + '.ufo', addAalt)
-        _makeDesignSpace(font, tmpdir, 'vf.designspace')
+        if need2files:
+            _makeDesignSpace(font, tmpdir, 'vf.designspace', False)
+            if italicFilename:
+                _makeDesignSpace(font, tmpdir, 'vf2.designspace', True)
+        else:
+            _makeDesignSpace(font, tmpdir, 'vf.designspace')
         options = []
         if decomposeNestedRefs:
             options.append('-f')
-        try:
-            run(['fontmake'] + options + [
-                '-m', tmpdir + '/vf.designspace',
-                '-o', 'variable', '--output-path', str(filename)],
-                check=True, text=True, capture_output=True)
-        except CalledProcessError as e:
-            if fontforge.hasUserInterface():
-                fontforge.logWarning(e.stderr)
-                fontforge.postError(
-                    "Failed to export",
-                    "fontmake failed with return code {0}".format(e.returncode)
-                )
-            else:
-                raise
+        _doExportVF(font, tmpdir, filename, italicFilename, options, need2files)
 
 
 def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
     decomposeNestedRefs = False
     addAalt = False
+    secondaryFile = None
     if 'options' in dialogResult:
         for opt in dialogResult['options']:
             if opt == 'nestedRefs':
                 decomposeNestedRefs = True
             if opt == 'aalt':
                 addAalt = True
-    exportVariableFont(font, dialogResult['file'], decomposeNestedRefs, addAalt)
+    if 'file2' in dialogResult:
+        secondaryFile = dialogResult['file2']
+    exportVariableFont(font, dialogResult['file'], secondaryFile, decomposeNestedRefs, addAalt)
 
 
 def _saveMenuDialog(font: fontforge.font) -> dict | None:
-    questions = [
-        {
-            'type': 'savepath', 'question': 'Save as:', 'tag': 'file',
-            'default':
-                font.default_base_filename + '.ttf' if font.default_base_filename
-                else '.'.join(font.path.split('.')[:-1]) + '.ttf',
-            'filter': '*.ttf',
-        },
+    if _hasBothRomanAndItalic(font):
+        questions = [
+            {
+                'type': 'savepath', 'question': 'Roman VF:', 'tag': 'file',
+                'default':
+                    font.default_base_filename + '.ttf' if font.default_base_filename
+                    else '.'.join(font.path.split('.')[:-1]) + '.ttf',
+                'filter': '*.ttf',
+            },
+            {
+                'type': 'savepath', 'question': 'Italic VF:', 'tag': 'file2',
+                'default':
+                    font.default_base_filename + '-Italic.ttf' if font.default_base_filename
+                    else '.'.join(font.path.split('.')[:-1]) + '-Italic.ttf',
+                'filter': '*.ttf',
+            },
+        ]
+    else:
+        questions = [
+            {
+                'type': 'savepath', 'question': 'Save as:', 'tag': 'file',
+                'default':
+                    font.default_base_filename + '.ttf' if font.default_base_filename
+                    else '.'.join(font.path.split('.')[:-1]) + '.ttf',
+                'filter': '*.ttf',
+            },
+        ]
+    questions += [
         {
             'type': 'choice', 'question': 'Options:', 'tag': 'options',
             'checks': True, 'multiple': True,

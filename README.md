@@ -80,6 +80,15 @@ Currently available options:
 
 - Remove nested refs: Tell fontmake to decompose nested references into simple
   ones. Nested references are known to cause problems in certain environments.
+- Add 'aalt' feature: Calculate and output 'aalt' feature to UFO.
+
+> [!TIP]
+> You do not have to add 'aalt' lookups manually.
+
+> [!IMPORTANT]
+> If the font family has both roman (non-italic) and italic styles, you
+> have to specify 2 output files. This is because roman and italic files
+> are usually incompatible since they are designed separately.
 
 > [!IMPORTANT]
 > You need all masters open before you use this menu item. Also, make

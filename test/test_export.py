@@ -28,11 +28,15 @@ def _axisMinMaxTestFonts():
     font1.os2_weight = 400
     setVFValue(font1, 'axes.wght.active', True)
     setVFValue(font1, 'axes.wght.useDefault', True)
+    setVFValue(font1, 'axes.ital.active', True)
+    setVFValue(font1, 'axes.ital.useDefault', True)
     font2 = fontforge.font()
     font2.familyname = "TestFamily"
     setVFValue(font2, 'axes.wght.active', True)
     setVFValue(font2, 'axes.wght.useDefault', False)
     setVFValue(font2, 'axes.wght.value', 700)
+    setVFValue(font2, 'axes.ital.active', True)
+    setVFValue(font2, 'axes.ital.useDefault', True)
     return font1, font2
 
 
@@ -161,3 +165,20 @@ def test_isFixedPitch(width_I, width_W, expected):
         assert _isFixedPitch(font) == expected
     finally:
         font.close()
+
+
+@pytest.mark.parametrize(('italic1', 'italic2', 'expected'), [
+    (0, 0, False),
+    (0, -10, True),
+    (-10, -10, False),
+])
+def test_hasBothRomanAndItalic(italic1, italic2, expected):
+    from fontforgeVF.export import _hasBothRomanAndItalic
+    try:
+        font1, font2 = _axisMinMaxTestFonts()
+        font1.italicangle = italic1
+        font2.italicangle = italic2
+        assert _hasBothRomanAndItalic(font1) == expected
+    finally:
+        font1.close()
+        font2.close()
