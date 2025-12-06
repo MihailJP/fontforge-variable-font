@@ -283,7 +283,7 @@ def exportVariableFont(
         s = 0
         for f in _getSourceFonts(font):
             s += 1
-            _outputUfo(font, tmpdir, 'source' + str(s) + '.ufo', addAalt)
+            _outputUfo(f, tmpdir, 'source' + str(s) + '.ufo', addAalt)
         _makeDesignSpace(font, tmpdir, 'vf.designspace')
         options = []
         if decomposeNestedRefs:
