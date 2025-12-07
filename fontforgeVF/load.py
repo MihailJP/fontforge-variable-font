@@ -9,27 +9,6 @@ __all__ = [
 ]
 
 
-def _lookupName(data: dict, nameID: int, langID: int = 0x409) -> str | None:
-    if 'name' in data['ttFont']:
-        for name in data['ttFont']['name']['namerecord']:
-            name['@nameID'] = int(name['@nameID'])
-            name['@platformID'] = int(name['@platformID'])
-            name['@platEncID'] = int(name['@platEncID'])
-            name['@langID'] = intOrFloat(name['@langID'])
-        if result := list(filter(
-            lambda x: x['@nameID'] == nameID and
-            x['@platformID'] == 3 and
-            x['@platEncID'] == 1 and
-            x['@langID'] == langID,
-            data['ttFont']['name']['namerecord']
-        )):
-            return result[0]['#text']
-        else:
-            return None
-    else:
-        return None
-
-
 def _checkAxisValue(ttf: ttLib.TTFont, axisValues: dict[str, int | float]):
     fail = []
     for axis in ttf['fvar'].axes:
