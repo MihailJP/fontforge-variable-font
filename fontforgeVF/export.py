@@ -387,7 +387,7 @@ def exportVariableFont(
 
     :param font: Main font which font-family-wide parameters are set.
     Fontforge font object.
-    :param filename: Output file name. Must end with '.ttf'.
+    :param filename: Output file name. Must end with '.ttf' or '.woff2'.
     :param italicFilename: Secondary output file name for italic. Must
     end with '.ttf'. Required if the font family has both roman and
     italic styles
