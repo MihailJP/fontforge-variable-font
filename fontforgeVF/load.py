@@ -45,28 +45,53 @@ def _doOpenVariableFont(filename: str | PathLike, axisValues: dict[str, int | fl
         return fontforge.open(instancePath)
 
 
-def openVariableFont(filename: str | PathLike, axisValues: dict[str, int | float]) -> fontforge.font:
+def openVariableFont(
+    filename: str | PathLike,
+    axisValuesOrInstance: int | str | dict[str, int | float]
+) -> fontforge.font:
     """Opens an instance of variable font
 
     Fontforge cannot treat variable fonts themselves, so they must be
     instantiated.
 
     :param filename: Variable font file to read. Must end with '.ttf'.
-    :param axisValues:``dict`` of axis positions, with axis tag as its
-    key.
-    :raises ``ValueError``: At least one value of ``axisValues`` is out
-    of range.
+    :param axisValuesOrInstance: If ``int``, an index of the named
+    instance list (0 for the first instance). If ``str``, the name of
+    an instance. If ``dict``, axis tags as its keys and axis positions
+    as their values.
+    :raises ``IndexError``: When ``axisValuesOrInstance`` is an
+    ``int``, the index of the instance list is out of range.
+    :raises ``ValueError``: When ``axisValuesOrInstance`` is a
+    ``dict``, at least one value of design axes is out of range
     """
     with ttLib.TTFont(filename) as ttf:
         if 'fvar' not in ttf:
             return fontforge.open(filename)
-        elif list(filter(lambda x: x.minValue != x.maxValue, ttf['fvar'].axes)):
-            return _doOpenVariableFont(filename, axisValues, ttf)
+        elif isinstance(axisValuesOrInstance, dict):
+            if list(filter(lambda x: x.minValue != x.maxValue, ttf['fvar'].axes)):
+                return _doOpenVariableFont(filename, axisValuesOrInstance, ttf)
+            else:
+                return fontforge.open(filename)
+        elif isinstance(axisValuesOrInstance, int):
+            return _doOpenVariableFont(
+                filename,
+                ttf['fvar'].instances[axisValuesOrInstance].coordinates,
+                ttf
+            )
+        elif isinstance(axisValuesOrInstance, str):
+            return _doOpenVariableFont(
+                filename,
+                list(filter(
+                    lambda x: str(ttf['name'].getName(x.subfamilyNameID, 3, 1, 0x409)) == axisValuesOrInstance,
+                    ttf['fvar'].instances
+                ))[0].coordinates,
+                ttf
+            )
         else:
-            return fontforge.open(filename)
+            raise TypeError('incompatible type for axisValuesOrInstance')
 
 
-def _selectInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont):
+def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont):
     assert 'fvar' in ttf
     questions = []
     for axis in ttf['fvar'].axes:
@@ -85,7 +110,27 @@ def _selectInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont):
     if result := fontforge.askMulti('Please specify an instance to open', questions):
         for key in result:
             result[key] = intOrFloat(result[key])
-        openVariableFont(filename, result)
+        _doOpenVariableFont(filename, result, ttf)
+
+
+def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont):
+    assert 'fvar' in ttf
+    result = fontforge.askChoices(
+        'Choose instance(s) to open',
+        'Choose ',
+        [str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances],
+        multiple=True
+    )
+    for i in [i[1] for i in list(filter(lambda x: x[0], zip(result, ttf['fvar'].instances)))]:
+        _doOpenVariableFont(filename, i.coordinates, ttf)
+
+
+def _selectInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, dialogType):
+    assert 'fvar' in ttf
+    if dialogType == 0:
+        _chooseInstanceDialog(filename, ttf)
+    else:
+        _setParameterDialog(filename, ttf)
 
 
 def loadMenu(u, glyph):
@@ -101,7 +146,7 @@ def loadMenu(u, glyph):
                 fontforge.logWarning(filename + " does not have 'fvar' table")
                 fontforge.open(filename)
             elif list(filter(lambda x: x.minValue != x.maxValue, ttf['fvar'].axes)):
-                _selectInstanceDialog(filename, ttf)
+                _selectInstanceDialog(filename, ttf, u)
             else:
                 fontforge.logWarning(filename + " has 'fvar' table but all axes are fixed")
                 fontforge.open(filename)

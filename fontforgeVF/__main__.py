@@ -12,8 +12,17 @@ def fontforge_plugin_init(**kw):
         callback=load.loadMenu,
         enable=load.loadEnable,
         context="Font",
-        submenu="_Variable Font",
-        name="_Open a variable font..."
+        submenu=["_Variable Font", '_Open a variable font'],
+        name="By named _instance...",
+        data=0
+    )
+    fontforge.registerMenuItem(
+        callback=load.loadMenu,
+        enable=load.loadEnable,
+        context="Font",
+        submenu=["_Variable Font", '_Open a variable font'],
+        name="By _parameter...",
+        data=1
     )
     fontforge.registerMenuItem(
         callback=export.saveMenu,

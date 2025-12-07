@@ -41,13 +41,20 @@ export PYTHONPATH=/path/to/fontforge/python/module:$PYTHONPATH
 Usage
 -----
 
+> [!IMPORTANT]
+> Since the plugin feature has been hardly (maybe never) used (hence it can
+> be tested not well,) Fontforge may crash especially after a dialog is shown.
+> You are advised to back up your font project before use.
+
 ### Interactive usage
 
 As a Fontforge plugin, fontforgeVF adds 'Variable Font' submenu to 'Tools'
 menu which is dedicated for plugins.
 
 - Variable Font
-  - Open a variable font...
+  - Open a variable font
+    - By named instance...
+    - By parameter...
   - Generate a variable font...
   - Design axes...
   - Delete VF info
@@ -56,16 +63,23 @@ menu which is dedicated for plugins.
 
 Shows a dialog to open a variable font
 
-Shows a dialog to select a font. If a variable font is selected,
-then another dialog is shown to set values of design axes. If a
-non-variable font is selected, simply opens that font.
-
 > [!NOTE]
-> Currently named instances are not supported.
+> Variable fonts in WOFF2 format are not supported yet.
 
 > [!IMPORTANT]
 > VF-specific metadata will **not** be loaded to
 > ``font.persistent``.
+
+##### By named instance
+
+Open file dialog is shown first. If a variable font is selected, then another
+dialog is shown to select (one or more) named instances. If a non-variable
+font is selected, simply opens that font.
+
+##### By parameter
+
+Like above, but the second dialog is not to select a named instance, but to
+specify design axis parameters.
 
 #### Generate a variable font
 
@@ -237,7 +251,9 @@ fontXL = fontforge.open('MyFont-UltraExpanded-ExtraLight.sfd')
 fontXB = fontforge.open('MyFont-UltraExpanded-ExtraBold.sfd')
 
 # Open an instance from an existing variable font
-font = fontforgeVF.openVariableFont('MyFont[wdth,wght].ttf', {'wdth': 100, 'wght': 400})
+font1 = fontforgeVF.openVariableFont('MyFont[wdth,wght].ttf', {'wdth': 100, 'wght': 400})  # by parameters
+font2 = fontforgeVF.openVariableFont('MyFont[wdth,wght].ttf', 'Regular')  # named instance
+font3 = fontforgeVF.openVariableFont('MyFont[wdth,wght].ttf', 2)  # list index (instances are listed in 'fvar' table)
 
 # Set VF-specific metadata
 fontforgeVF.initPersistentDict(fontCL)
