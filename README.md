@@ -47,15 +47,25 @@ As a Fontforge plugin, fontforgeVF adds 'Variable Font' submenu to 'Tools'
 menu which is dedicated for plugins.
 
 - Variable Font
-  - Open a variable font... (not implemented)
+  - Open a variable font...
   - Generate a variable font...
   - Design axes...
   - Delete VF info
 
 #### Open a variable font
 
+Shows a dialog to open a variable font
+
+Shows a dialog to select a font. If a variable font is selected,
+then another dialog is shown to set values of design axes. If a
+non-variable font is selected, simply opens that font.
+
 > [!NOTE]
-> This item is not yet implemented.
+> Currently named instances are not supported.
+
+> [!IMPORTANT]
+> VF-specific metadata will **not** be loaded to
+> ``font.persistent``.
 
 #### Generate a variable font
 
@@ -225,6 +235,9 @@ fontCL = fontforge.open('MyFont-UltraCondensed-ExtraLight.sfd')
 fontCB = fontforge.open('MyFont-UltraCondensed-ExtraBold.sfd')
 fontXL = fontforge.open('MyFont-UltraExpanded-ExtraLight.sfd')
 fontXB = fontforge.open('MyFont-UltraExpanded-ExtraBold.sfd')
+
+# Open an instance from an existing variable font
+font = fontforgeVF.openVariableFont('MyFont[wdth,wght].ttf', {'wdth': 100, 'wght': 400})
 
 # Set VF-specific metadata
 fontforgeVF.initPersistentDict(fontCL)

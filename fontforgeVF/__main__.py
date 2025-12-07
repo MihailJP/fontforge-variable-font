@@ -1,19 +1,16 @@
-from fontforgeVF import delete, design_axes, export
+from fontforgeVF import (
+    delete,
+    design_axes,
+    export,
+    load
+)
 import fontforge
-
-
-def loadMenu(u, glyph):
-    fontforge.postNotice("This is a mockup", "Not yet implemented!")
-
-
-def loadEnable(u, glyph):
-    return False
 
 
 def fontforge_plugin_init(**kw):
     fontforge.registerMenuItem(
-        callback=loadMenu,
-        enable=loadEnable,
+        callback=load.loadMenu,
+        enable=load.loadEnable,
         context="Font",
         submenu="_Variable Font",
         name="_Open a variable font..."

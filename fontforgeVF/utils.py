@@ -22,6 +22,8 @@ def intOrFloat(val):
     parameter represents a fractional, returns in ``float`` type.
     Otherwise, returns the parameter as is.
     """
+    if isinstance(val, str) and val.startswith('0x'):
+        return int(val, 16)
     f = 0.0
     i = 0
     try:

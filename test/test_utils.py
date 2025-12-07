@@ -11,6 +11,7 @@ import fontforge
     ("-12.5", -12.5, float),
     ("1E2", 100.0, float),
     ("spam", "spam", str),
+    ("0x60", 0x60, int),
 ])
 def test_intOrFloat(param, expectedVal, expectedType):
     from fontforgeVF.utils import intOrFloat
