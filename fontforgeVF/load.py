@@ -34,7 +34,7 @@ def _doOpenVariableFont(filename: str | PathLike, axisValues: dict[str, int | fl
         for tag in list(unset):
             axisValues[tag] = [a.defaultValue for a in filter(lambda x: x.axisTag == tag, varfont["fvar"].axes)][0]
     _checkAxisValue(varfont, axisValues)  # out of range
-    partial = instancer.instantiateVariableFont(varfont, axisValues)
+    partial = instancer.instantiateVariableFont(varfont, axisValues, static=True)
     with tempfile.TemporaryDirectory() as tmpdir:
         instancePath = (
             tmpdir + '/' + Path(filename).stem + '_' +
