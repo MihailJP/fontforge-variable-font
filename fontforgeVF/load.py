@@ -2,6 +2,7 @@ import fontforge
 from fontforgeVF.utils import intOrFloat
 from os import PathLike
 from fontTools import ttLib
+import faulthandler
 
 
 __all__ = [
@@ -19,8 +20,49 @@ def _checkAxisValue(ttf: ttLib.TTFont, axisValues: dict[str, int | float]):
         raise ValueError(', '.join(["'" + a + "'" for a in fail]) + ' out of range')
 
 
-def _doOpenVariableFont(filename: str | PathLike, axisValues: dict[str, int | float], varfont: ttLib.TTFont) -> fontforge.font:
-    from fontTools.varLib import instancer
+def _searchInstance(ttf: ttLib.TTFont, axisValues: dict[str, int | float]):
+    for i in ttf['fvar'].instances:
+        if i.coordinates == axisValues:
+            return i
+    return None
+
+
+def _loadInstanceNames(varfont: ttLib.TTFont, partial: ttLib.TTFont, postscriptNameID: int, subfamilyNameID: int):
+    for n in varfont['name'].names:
+        if n.nameID == postscriptNameID:
+            partial['name'].setName(str(n), 6, n.platformID, n.platEncID, n.langID)
+        if n.nameID == subfamilyNameID:
+            partial['name'].setName(
+                str(varfont['name'].getName(1, n.platformID, n.platEncID, n.langID)) +
+                ' ' + str(n),
+                4, n.platformID, n.platEncID, n.langID
+            )
+
+
+def _instantiate(
+    inputFilename: str | PathLike,
+    axisValues: dict[str, int | float],
+    outputFilename: str | PathLike
+) -> ttLib.TTFont:
+    # Separate process because instancer may crash
+    from subprocess import run
+
+    run(
+        [
+            'fonttools', 'varLib.instancer',
+            '-o', outputFilename,
+            '--static',
+            inputFilename,
+        ] + [str(k) + '=' + str(v) for k, v in axisValues.items()],
+        check=True, text=True)
+    return ttLib.TTFont(outputFilename)
+
+
+def _doOpenVariableFont(
+    filename: str | PathLike,
+    axisValues: dict[str, int | float],
+    varfont: ttLib.TTFont
+) -> fontforge.font:
     from pathlib import Path
     import tempfile
 
@@ -34,15 +76,19 @@ def _doOpenVariableFont(filename: str | PathLike, axisValues: dict[str, int | fl
         for tag in list(unset):
             axisValues[tag] = [a.defaultValue for a in filter(lambda x: x.axisTag == tag, varfont["fvar"].axes)][0]
     _checkAxisValue(varfont, axisValues)  # out of range
-    partial = instancer.instantiateVariableFont(varfont, axisValues, static=True)
     with tempfile.TemporaryDirectory() as tmpdir:
-        instancePath = (
-            tmpdir + '/' + Path(filename).stem + '_' +
-            '_'.join([str(k) + str(v) for k, v in axisValues.items()]) +
-            '.ttf'
+        stem = (
+            Path(filename).stem + '_' +
+            '_'.join([str(k) + str(v) for k, v in axisValues.items()])
         )
-        partial.save(instancePath)
-        return fontforge.open(instancePath)
+        if i := _searchInstance(varfont, axisValues):
+            stem = str(varfont['name'].getName(i.postscriptNameID, 3, 1, 0x409))
+        instancePath = tmpdir + '/' + stem + '.ttf'
+        with _instantiate(filename, axisValues, instancePath) as partial:
+            if i := _searchInstance(varfont, axisValues):
+                _loadInstanceNames(varfont, partial, i.postscriptNameID, i.subfamilyNameID)
+            partial.save(instancePath)
+            return fontforge.open(instancePath)
 
 
 def openVariableFont(
@@ -140,6 +186,7 @@ def loadMenu(u, glyph):
     then another dialog is shown to set values of design axes. If a
     non-variable font is selected, simply opens that font.
     """
+    faulthandler.enable()
     if filename := fontforge.openFilename('Open a variable font', '', '*.ttf'):
         with ttLib.TTFont(filename) as ttf:
             if 'fvar' not in ttf:
@@ -150,6 +197,7 @@ def loadMenu(u, glyph):
             else:
                 fontforge.logWarning(filename + " has 'fvar' table but all axes are fixed")
                 fontforge.open(filename)
+    faulthandler.disable()
 
 
 def loadEnable(u, glyph):
