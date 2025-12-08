@@ -82,13 +82,15 @@ def _doOpenVariableFont(
             '_'.join([str(k) + str(v) for k, v in axisValues.items()])
         )
         if i := _searchInstance(varfont, axisValues):
-            stem = str(varfont['name'].getName(i.postscriptNameID, 3, 1, 0x409))
+            n = str(varfont['name'].getName(i.postscriptNameID, 3, 1, 0x409))
+            if n:
+                stem = n
         instancePath = tmpdir + '/' + stem + '.ttf'
         with _instantiate(filename, axisValues, instancePath) as partial:
             if i := _searchInstance(varfont, axisValues):
                 _loadInstanceNames(varfont, partial, i.postscriptNameID, i.subfamilyNameID)
             partial.save(instancePath)
-            return fontforge.open(instancePath)
+        return fontforge.open(instancePath)
 
 
 def openVariableFont(
