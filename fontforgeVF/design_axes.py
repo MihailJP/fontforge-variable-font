@@ -56,7 +56,7 @@ def _loadLabels(tag: str, lang=None):
         text = ''
         assert isinstance(label, dict)
         for k, v in label.items():
-            labelAddr = addr + '.' + str(k).replace('.', '\ufdd0')  # escape decimal point with noncharacter
+            labelAddr = addr + '.' + str(k).replace('.', ',')  # escape decimal point
             if lang:
                 text += str(k) + ',' + \
                     utils.getVFValue(font, labelAddr + '.localNames.' + lang, '') + \
@@ -274,7 +274,7 @@ def _saveResult_labels(result, k, v):
             lambda x: (x[0][0].strip(), x[0][1].strip(), x[1][0].strip(), x[1][1].strip()),
             zip(_x := zip(_x := iter(result[k + 'labels'].split(',')), _x), _x)
         )):
-            val = val.replace('.', '\ufdd0')  # escape decimal point with noncharacter
+            val = val.replace('.', ',')  # escape decimal point
             valAddr = 'axes.' + k + '.labels.' + val
             utils.setOrDeleteVFValue(font, valAddr + '.elidable',
                                      None if el == '' else bool(utils.intOrFloat(el)))
@@ -286,7 +286,7 @@ def _saveResult_labels(result, k, v):
     for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
         if result['lang' + i] and result[k + 'labels' + i]:
             for val, name in list(zip(_x := iter(result[k + 'labels' + i].split(',')), _x)):
-                val = val.replace('.', '\ufdd0')  # escape decimal point with noncharacter
+                val = val.replace('.', ',')  # escape decimal point
                 utils.setOrDeleteVFValue(
                     font, 'axes.' + k + '.labels.' + val + '.localNames.' + result['lang' + i],
                     None if name == '' else name)

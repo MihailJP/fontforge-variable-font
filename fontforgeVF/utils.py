@@ -1,4 +1,5 @@
 import fontforge
+import re
 
 
 __all__ = [
@@ -98,8 +99,10 @@ def getVFValue(font: fontforge.font, key: str, default=None):
     :param font: Fontforge font object
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
-    (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\ufdd0``.
+    (``int`` or ``float``). If key is a ``float`` value, a comma
+    (continental decimal separator) should be used since a dot
+    (Anglo-American decimal separator) conflicts with hierarchical
+    separator.
     :param default: Optional. Returns this value if ``key`` does not
     exist. Without this parameter defaults to ``None``.
     :return: the value for ``key``, or ``default`` if no such ``key``.
@@ -109,7 +112,7 @@ def getVFValue(font: fontforge.font, key: str, default=None):
     else:
         info = font.persistent["VF"]
         for k in key.split('.'):
-            k = intOrFloat(k.replace('\ufdd0', '.'))
+            k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', k))
             if not isinstance(info, dict):
                 return default
             elif k not in info:
@@ -128,21 +131,24 @@ def setVFValue(font: fontforge.font, key: str, val):
     :param font: Fontforge font object
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
-    (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\ufdd0``.
+    (``int`` or ``float``). If key is a ``float`` value, a comma
+    (continental decimal separator) should be used since a dot
+    (Anglo-American decimal separator) conflicts with hierarchical
+    separator.
     :param val: A value to set. this can be anything picklable.
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """
     initPersistentDict(font)
     info = font.persistent["VF"]
     for k in key.split('.')[:-1]:
-        k = intOrFloat(k.replace('\ufdd0', '.'))
+        k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', k))
         if k not in info:
             info[k] = dict()
         elif not isinstance(info[k], dict):
             info[k] = dict()
         info = info[k]
-    info[key.split('.')[-1]] = val
+    k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', key.split('.')[-1]))
+    info[k] = val
 
 
 def deleteEmptyDicts(d: dict):
@@ -167,21 +173,24 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
     :param font: Fontforge font object
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
-    (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\ufdd0``.
+    (``int`` or ``float``). If key is a ``float`` value, a comma
+    (continental decimal separator) should be used since a dot
+    (Anglo-American decimal separator) conflicts with hierarchical
+    separator.
     :return: ``True`` if the key was deleted, ``False`` otherwise.
     """
     if vfInfoExists(font):
         info = font.persistent["VF"]
         for k in key.split('.')[:-1]:
-            k = intOrFloat(k.replace('\ufdd0', '.'))
+            k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', k))
             if k not in info:
                 return False
             elif not isinstance(info[k], dict):
                 return False
             info = info[k]
-        if key.split('.')[-1] in info:
-            del info[key.split('.')[-1]]
+        k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', key.split('.')[-1]))
+        if k in info:
+            del info[k]
             deleteEmptyDicts(font.persistent["VF"])
             return True
         else:
@@ -200,8 +209,10 @@ def setOrDeleteVFValue(font: fontforge.font, key: str, val):
     :param font: Fontforge font object
     :param key: Name of key. Use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
-    (``int`` or ``float``). If key name itself contains a dot, escape
-    it to ``\\ufdd0``.
+    (``int`` or ``float``). If key is a ``float`` value, a comma
+    (continental decimal separator) should be used since a dot
+    (Anglo-American decimal separator) conflicts with hierarchical
+    separator.
     :param val: A value to set. this can be anything picklable.
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """
