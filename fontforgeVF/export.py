@@ -211,9 +211,6 @@ def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument, filterIt
                 s.location[name] = getAxisValue(f, tag)
         s.familyName = _getFontFamilyName(f)
         s.styleName = _getFontSubFamilyName(f)
-        s.localisedFamilyName = {}
-        for i in set([L[0] for L in f.sfnt_names]) - set(['English (US)']):
-            s.localisedFamilyName[language.languageCodeReverseLookup(i)] = _getFontFamilyName(f, i)
         doc.addSource(s)
 
 
@@ -232,9 +229,6 @@ def _designSpaceAxes_labels(labels, a: AxisDescriptor | DiscreteAxisDescriptor):
                 al.elidable = d['elidable']
             if 'linkedValue' in d:
                 al.linkedUserValue = d['linkedValue']
-            if 'localNames' in d:
-                for lang, name in d['localNames'].items():
-                    al.labelNames[lang] = name
             L.append(al)
     return L
 
@@ -253,8 +247,6 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument, filterItali
                 a.maximum = _axisMaxValue(font, a.tag)
             a.default = getAxisValue(font, a.tag)
             a.name = utils.getVFValue(font, 'axes.' + k + '.name', v['name'])
-            for L, n in utils.getVFValue(font, 'axes.' + k + '.localNames', {}).items():
-                a.labelNames[L] = n
             if val := utils.getVFValue(font, 'axes.' + k + '.map'):
                 a.map = val
             if val := utils.getVFValue(font, 'axes.' + k + '.order'):
@@ -290,6 +282,66 @@ def _checkExtensionTtfOrWoff2(filename: str | PathLike) -> str:
         raise ValueError("'" + str(filename) + "' has unexpected extension")
 
 
+_fields = {  # From python.c
+    "SubFamily": 2,
+    "Copyright": 0,
+    "Family": 1,
+    "Fullname": 4,
+    "UniqueID": 3,
+    "Version": 5,
+    "PostScriptName": 6,
+    "Trademark": 7,
+    "Manufacturer": 8,
+    "Designer": 9,
+    "Descriptor": 10,
+    "Vendor URL": 11,
+    "Designer URL": 12,
+    "License": 13,
+    "License URL": 14,
+    "Preferred Family": 16,
+    "Preferred Styles": 17,
+    "Compatible Full": 18,
+    "Sample Text": 19,
+    "CID findfont Name": 20,
+    "WWS Family": 21,
+    "WWS Subfamily": 22,
+}
+
+
+def _fixTtf(font: fontforge.font, filename: str | PathLike):
+    from fontTools import ttLib
+    with ttLib.TTFont(str(filename)) as ttf:
+        for i in font.sfnt_names:
+            if i[0] != 'English (US)':
+                if i[1] in _fields:
+                    ttf['name'].setName(i[2], _fields[i[1]], 3, 1, language.languageCodeReverseLookup(i[0]))
+        for k, v in designAxes.items():
+            tag = (
+                utils.getVFValue(font, 'axes.' + k + '.tag', '????')
+                if k.startswith('custom') else k
+            )
+            if utils.getVFValue(font, 'axes.' + k + '.active', False):
+                localNames = utils.getVFValue(font, 'axes.' + k + '.localNames', {})
+                for lang, name in localNames.items():
+                    axis = list(filter(lambda x: x.axisTag == tag, ttf["fvar"].axes))
+                    if axis:
+                        ttf['name'].setName(name, axis[0].axisNameID, 3, 1, lang)
+        for axisLabel in ttf['STAT'].table.AxisValueArray.AxisValue:
+            axisIndex = axisLabel.AxisIndex
+            tag = ttf['STAT'].table.DesignAxisRecord.Axis[axisIndex].AxisTag
+            value = axisLabel.Value
+            localNames = utils.getVFValue(
+                font, 'axes.' + tag + '.labels.' + str(int(value)) + '.localNames',
+                utils.getVFValue(
+                    font, 'axes.' + tag + '.labels.' + str(float(value)).replace('.', ',') + '.localNames',
+                    {}
+                )
+            )
+            for lang, name in localNames.items():
+                ttf['name'].setName(name, axisLabel.ValueNameID, 3, 1, lang)
+        ttf.save(filename)
+
+
 def _doExportVF(
     font: fontforge.font,
     tmpdir,
@@ -302,22 +354,23 @@ def _doExportVF(
     from pathlib import Path
     from shutil import move
 
-    outputFile = str(filename)
-    if _checkExtensionTtfOrWoff2(filename) == 'woff2':
-        outputFile = str(Path(tmpdir, Path(filename).stem)) + '.ttf'
+    ttFile = str(Path(tmpdir, Path(filename).stem)) + '.ttf'
     result = run(['fontmake'] + options + [
         '-m', designSpacePath,
-        '-o', 'variable', '--output-path', outputFile],
+        '-o', 'variable', '--output-path', ttFile],
         check=True, text=True, capture_output=fontforge.hasUserInterface())
     if fontforge.hasUserInterface():
         stderr.write(result.stderr)
+    _fixTtf(font, ttFile)
     if _checkExtensionTtfOrWoff2(filename) == 'woff2':
         result = run(
-            ['woff2_compress', outputFile],
+            ['woff2_compress', ttFile],
             check=True, text=True, capture_output=fontforge.hasUserInterface())
         if fontforge.hasUserInterface():
             stderr.write(result.stderr)
-        move(outputFile[:-4] + '.woff2', filename)
+        move(ttFile[:-4] + '.woff2', filename)
+    else:
+        move(ttFile, filename)
 
 
 def _exportVF(

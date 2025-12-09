@@ -1,22 +1,15 @@
 import pytest
 
 
-@pytest.mark.parametrize(('winLang', 'langCode', 'langName', 'useTableInFontTools', 'exist'), [
-    (0x409, 'en-US', 'English (US)', False, True),
-    (0x411, 'ja-JP', 'Japanese', False, True),
-    (0x40a, 'es-ES_tradnl', 'Spanish (Traditional)', False, True),
-    (0xc0a, 'es-ES', 'Spanish (Modern)', False, True),
-    (0x40a, 'es-ES_tradnl', 'Spanish (Spain)', False, False),
-    (0x40a, 'es-ES', 'Spanish (Spain)', False, False),
-    (0xc0a, 'es-ES', 'Spanish (Spain)', False, False),
-    (0x409, 'en', 'English (US)', True, True),
-    (0x411, 'ja', 'Japanese', True, True),
-    (0x40a, 'es', 'Spanish (Traditional)', True, False),
-    (0xc0a, 'es', 'Spanish (Modern)', True, False),
-    (0x40a, 'es', 'Spanish (Spain)', True, False),
-    (0x40a, 'es', 'Spanish (Spain)', True, False),
-    (0xc0a, 'es', 'Spanish (Spain)', True, True),
+@pytest.mark.parametrize(('winLang', 'langCode', 'langName', 'exist'), [
+    (0x409, 'en-US', 'English (US)', True),
+    (0x411, 'ja-JP', 'Japanese', True),
+    (0x40a, 'es-ES_tradnl', 'Spanish (Traditional)', True),
+    (0xc0a, 'es-ES', 'Spanish (Modern)', True),
+    (0x40a, 'es-ES_tradnl', 'Spanish (Spain)', False),
+    (0x40a, 'es-ES', 'Spanish (Spain)', False),
+    (0xc0a, 'es-ES', 'Spanish (Spain)', False),
 ])
-def test_languageCodeIterator(winLang, langCode, langName, useTableInFontTools, exist):
+def test_languageCodeIterator(winLang, langCode, langName, exist):
     from fontforgeVF.language import languageCodeIterator
-    assert ((winLang, langCode, langName) in languageCodeIterator(useTableInFontTools)) == exist
+    assert ((winLang, langCode, langName) in languageCodeIterator()) == exist

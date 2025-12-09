@@ -59,7 +59,7 @@ def _loadLabels(tag: str, lang=None):
             labelAddr = addr + '.' + str(k).replace('.', ',')  # escape decimal point
             if lang:
                 text += str(k) + ',' + \
-                    utils.getVFValue(font, labelAddr + '.localNames.' + lang, '') + \
+                    utils.getVFValue(font, labelAddr + '.localNames.' + hex(lang), '') + \
                     ', '
             else:
                 text += str(k) + ',' + \
@@ -104,10 +104,12 @@ def _prepareQuestions_languages(questions):
         languageList = [
             {'name': '', 'tag': '', 'default': defaultCode == ''}
         ]
-        for langId, langCode, langName in sorted(language.languageCodeIterator(True), key=lambda x: x[2]):
-            languageList.append({'name': langName, 'tag': langCode, 'default': langCode == defaultCode})
+        for langId, langCode, langName in sorted(language.languageCodeIterator(), key=lambda x: x[2]):
+            languageList.append({'name': langName, 'tag': hex(langId), 'default': langId == defaultCode})
         questions.append({
-            'category': 'Localized names ' + (languages[i-1] if i <= len(languages) else str(i)),
+            'category': 'Localized names ' + (
+                language.languageCodeLookup(languages[i-1]) if i <= len(languages) else str(i)
+            ),
             'questions': [
                 {
                     'type': 'choice',
@@ -206,7 +208,7 @@ def _prepareQuestions_localNames(questions, k, v, languages, localNameRange, loc
             'question': v["name"] + ':',
             'tag': k + 'name' + str(i),
             'default': utils.getVFValue(
-                font, 'axes.' + k + '.localNames.' + languages[i-1], ''
+                font, 'axes.' + k + '.localNames.' + hex(languages[i-1]), ''
             ) if i <= len(languages) else '',
         })
         questions[localNameCategory + i - 1]["questions"].append({
