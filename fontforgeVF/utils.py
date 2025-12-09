@@ -90,6 +90,27 @@ def vfInfoExists(font: fontforge.font) -> bool:
         return True
 
 
+def _checkVFAddrFragment(key: str) -> tuple:
+    listitem = re.search(r'(\[\d+\])+$', key)
+    k = re.sub(r'(\[\d+\])+$', '', key)
+    k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', k))
+    if listitem:
+        listitem = list(map(int, listitem[0][1:-1].split('][')))
+    else:
+        listitem = []
+    return (k, listitem)
+
+
+def _checkVFAddr(key: str) -> list[tuple]:
+    parts = []
+    for k in key.split('.'):
+        k, listitem = _checkVFAddrFragment(k)
+        parts.append((dict, k))
+        for i in listitem:
+            parts.append((list, i))
+    return parts
+
+
 def getVFValue(font: fontforge.font, key: str, default=None):
     """Gets a value from VF info
 
@@ -111,15 +132,28 @@ def getVFValue(font: fontforge.font, key: str, default=None):
         return default
     else:
         info = font.persistent["VF"]
-        for k in key.split('.'):
-            k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', k))
-            if not isinstance(info, dict):
+        for part in _checkVFAddr(key):
+            c, k = part
+            if not isinstance(info, c):
                 return default
-            elif k not in info:
+            elif (c is dict) and (k not in info):
+                return default
+            elif (c is list) and k >= len(info):
                 return default
             else:
                 info = info[k]
         return info
+
+
+def _makeSureKeyExists(container, key):
+    if isinstance(container, list):
+        while len(container) <= key:
+            container.append(None)
+    elif isinstance(container, dict):
+        if key not in container:
+            container[key] = None
+    else:
+        raise TypeError("unsupported type")
 
 
 def setVFValue(font: fontforge.font, key: str, val):
@@ -139,16 +173,43 @@ def setVFValue(font: fontforge.font, key: str, val):
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """
     initPersistentDict(font)
-    info = font.persistent["VF"]
-    for k in key.split('.')[:-1]:
-        k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', k))
-        if k not in info:
-            info[k] = dict()
-        elif not isinstance(info[k], dict):
-            info[k] = dict()
+    parent = font.persistent
+    info = parent["VF"]
+    prevk = "VF"
+    for part in _checkVFAddr(key):
+        c, k = part
+        if not isinstance(info, c):
+            parent[prevk] = c()
+            _makeSureKeyExists(parent[prevk], k)
+            info = parent[prevk]
+        elif (c is dict) and (k not in info):
+            _makeSureKeyExists(parent[prevk], k)
+            info = parent[prevk]
+        elif (c is list) and k >= len(info):
+            _makeSureKeyExists(parent[prevk], k)
+            info = parent[prevk]
+        parent = info
         info = info[k]
-    k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', key.split('.')[-1]))
-    info[k] = val
+        prevk = k
+    parent[k] = val
+
+
+def _deleteEmptyLists(d: dict):
+    if isinstance(d, list):
+        for i in range(len(d)):
+            if isinstance(d[i], dict):
+                deleteEmptyDicts(d[i])
+                if len(d[i]) == 0:
+                    d[i] = None
+            elif isinstance(d[i], list):
+                _deleteEmptyLists(d[i])
+                if len(d[i]) == 0:
+                    d[i] = None
+        for i in range(len(d) - 1, -1, -1):
+            if d[i] is None:
+                d.pop()
+            else:
+                break
 
 
 def deleteEmptyDicts(d: dict):
@@ -159,6 +220,10 @@ def deleteEmptyDicts(d: dict):
             k = intOrFloat(k)
             if isinstance(d[k], dict):
                 deleteEmptyDicts(d[k])
+                if len(d[k]) == 0:
+                    del d[k]
+            elif isinstance(d[k], list):
+                _deleteEmptyLists(d[k])
                 if len(d[k]) == 0:
                     del d[k]
 
@@ -180,17 +245,28 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
     :return: ``True`` if the key was deleted, ``False`` otherwise.
     """
     if vfInfoExists(font):
-        info = font.persistent["VF"]
-        for k in key.split('.')[:-1]:
-            k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', k))
-            if k not in info:
+        parent = font.persistent
+        info = parent["VF"]
+        for part in _checkVFAddr(key):
+            c, k = part
+            if not isinstance(info, c):
+                deleteEmptyDicts(font.persistent["VF"])
                 return False
-            elif not isinstance(info[k], dict):
+            elif (c is dict) and (k not in info):
+                deleteEmptyDicts(font.persistent["VF"])
                 return False
+            elif (c is list) and k >= len(info):
+                deleteEmptyDicts(font.persistent["VF"])
+                return False
+            parent = info
             info = info[k]
-        k = intOrFloat(re.sub(r'^([-+]?\d*),(\d+([Ee][-+]?\d+)?)$', r'\1.\2', key.split('.')[-1]))
-        if k in info:
-            del info[k]
+
+        if (c is dict) and (k in parent):
+            del parent[k]
+            deleteEmptyDicts(font.persistent["VF"])
+            return True
+        elif (c is list) and (k < len(parent)) and (parent[k] is not None):
+            parent[k] = None
             deleteEmptyDicts(font.persistent["VF"])
             return True
         else:

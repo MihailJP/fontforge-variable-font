@@ -61,6 +61,10 @@ def test_vfInfoExists(persistent, expected):
     ({'VF': {'spam': {'ham': 300}}}, 'spam.ham', None, 300),
     ({'VF': {'spam': {10: 300}}}, 'spam.10', None, 300),
     ({'VF': {'spam': {2.5: 300}}}, 'spam.2,5', None, 300),
+    ({'VF': {'spam': ['ham', 'eggs']}}, 'spam[0]', None, 'ham'),
+    ({'VF': {'spam': [{'ham': 'eggs'}]}}, 'spam[0].ham', None, 'eggs'),
+    ({'VF': {'spam': [['ham', 'eggs']]}}, 'spam[0][0]', None, 'ham'),
+    ({'VF': {'spam': [[{'ham': 'eggs'}]]}}, 'spam[0][0].ham', None, 'eggs'),
 ])
 def test_getVFValue(persistent, key, default, expected):
     from fontforgeVF.utils import getVFValue
@@ -81,6 +85,8 @@ def test_getVFValue(persistent, key, default, expected):
     ({'VF': {'spam': {'eggs': 600}}}, 'spam.ham', 300, {'VF': {'spam': {'eggs': 600, 'ham': 300}}}),
     ({'VF': {'spam': {'eggs': 600}}}, 'spam.25', 300, {'VF': {'spam': {'eggs': 600, 25: 300}}}),
     ({'VF': {'spam': {'eggs': 600}}}, 'spam.2,5', 300, {'VF': {'spam': {'eggs': 600, 2.5: 300}}}),
+    ({'VF': {'spam': ['ham']}}, 'spam[0]', 'eggs', {'VF': {'spam': ['eggs']}}),
+    ({'VF': {'spam': ['ham']}}, 'spam[1]', 'eggs', {'VF': {'spam': ['ham', 'eggs']}}),
 ])
 def test_setVFValue(persistent, key, val, expectedPersistent):
     from fontforgeVF.utils import setVFValue
@@ -102,6 +108,11 @@ def test_setVFValue(persistent, key, val, expectedPersistent):
     ({'ham': {'spam': {'ham': 300}}}, {'ham': {'spam': {'ham': 300}}}),
     ({'ham': {'spam': {'ham': 300}, 'eggs': {}}}, {'ham': {'spam': {'ham': 300}}}),
     ({'ham': {'spam': {'ham': {}}, 'eggs': {}}}, {}),
+    ({'ham': {'spam': {'ham': []}, 'eggs': {}}}, {}),
+    ({'ham': {'spam': {'ham': [None, None]}, 'eggs': {}}}, {}),
+    ({'ham': ['spam', None, 'ham', None]}, {'ham': ['spam', None, 'ham']}),
+    ({'ham': [{}, {}]}, {}),
+    ({'ham': [{}, {'spam': {}}]}, {}),
 ])
 def test_deleteEmptyDicts(param, expected):
     from fontforgeVF.utils import deleteEmptyDicts
@@ -121,6 +132,9 @@ def test_deleteEmptyDicts(param, expected):
     ({'VF': {'spam': {'ham': {}}, 'eggs': {}}}, 'spam.ham', True, {'VF': {}}),
     ({'VF': {'spam': {775: 300, 'eggs': 600}}}, 'spam.775', True, {'VF': {'spam': {'eggs': 600}}}),
     ({'VF': {'spam': {7.75: 300, 'eggs': 600}}}, 'spam.7,75', True, {'VF': {'spam': {'eggs': 600}}}),
+    ({'VF': {'spam': ['ham', 'eggs']}}, 'spam[0]', True, {'VF': {'spam': [None, 'eggs']}}),
+    ({'VF': {'spam': ['ham', 'eggs']}}, 'spam[1]', True, {'VF': {'spam': ['ham']}}),
+    ({'VF': {'spam': [{'ham': 1}, {'ham': 2}]}}, 'spam[1].ham', True, {'VF': {'spam': [{'ham': 1}]}}),
 ])
 def test_deleteVFValue(persistent, key, expected, expectedPersistent):
     from fontforgeVF.utils import deleteVFValue
