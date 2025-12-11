@@ -272,7 +272,7 @@ def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont):
     assert 'fvar' in ttf
     result = fontforge.askChoices(
         'Choose instance(s) to open',
-        'Choose ',
+        'Instances in this font',
         [str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances],
         multiple=True
     )
