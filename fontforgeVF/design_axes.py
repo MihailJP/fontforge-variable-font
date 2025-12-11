@@ -192,7 +192,11 @@ def _prepareQuestions_names(questions, k, v):
         'type': 'string',
         'question': v["name"] + ':',
         'tag': k + 'name',
-        'default': utils.getVFValue(font, 'axes.' + k + '.name', '' if k.startswith('custom') else v["name"]),
+        'default': utils.getVFValue(
+            font,
+            'axes.' + k + '.name',
+            '' if utils.vfInfoExists(font) or k.startswith('custom') else v["name"]
+        ),
     })
     questions[4]["questions"].append({
         'type': 'string',
