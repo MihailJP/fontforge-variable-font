@@ -39,6 +39,85 @@ def _loadInstanceNames(varfont: ttLib.TTFont, partial: ttLib.TTFont, postscriptN
             )
 
 
+def _addNames(ttf: ttLib.TTFont, data: dict, nameID: int):
+    data['name'] = ''
+    data['localNames'] = {}
+    for name in filter(
+        lambda x: x.nameID == nameID and x.platformID == 3 and x.platEncID == 1,
+        ttf['name'].names
+    ):
+        if name.langID == 0x409:
+            data['name'] = str(name)
+        else:
+            data['localNames'][name.langID] = str(name)
+    if len(data['localNames']) == 0:
+        del data['localNames']
+
+
+def _denormalize(minimum, default, maximum, value):
+    if value < 0:
+        return value * (default - minimum) + default
+    elif value > 0:
+        return value * (maximum - default) + default
+    else:
+        return default
+
+
+def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
+    vfData = {
+        'axes': {},
+    }
+    for axis in ttf['fvar'].axes:
+        tag = axis.axisTag
+        axisData = {'active': True}
+        if tag in axisValues:
+            axisData['useDefault'] = False
+            axisData['value'] = axisValues[tag]
+            if tag == 'ital':
+                axisData['value'] = bool(axisValues[tag])
+        else:
+            axisData['useDefault'] = True
+        axisData['minimum'] = axis.minValue
+        axisData['default'] = axis.defaultValue
+        axisData['maximum'] = axis.maxValue
+        _addNames(ttf, axisData, axis.axisNameID)
+        vfData['axes'][tag] = axisData
+        vfData['axes'][tag]['labels'] = {}
+
+    if 'avar' in ttf:
+        for axis, segments in ttf['avar'].segments.items():
+            minimum = vfData['axes'][axis]['minimum']
+            default = vfData['axes'][axis]['default']
+            maximum = vfData['axes'][axis]['maximum']
+            vfData['axes'][axis]['map'] = [
+                (
+                    _denormalize(minimum, default, maximum, k),
+                    _denormalize(minimum, default, maximum, v)
+                ) for k, v in ttf['avar'].segments[axis].items()
+            ]
+
+    for axis in ttf['STAT'].table.DesignAxisRecord.Axis:
+        if axis.AxisTag not in vfData['axes']:
+            vfData['axes'][axis.AxisTag] = {
+                'active': True,
+                'useDefault': True,
+                'labels': {},
+            }
+        vfData['axes'][axis.AxisTag]['order'] = axis.AxisOrdering
+
+    for label in ttf['STAT'].table.AxisValueArray.AxisValue:
+        labelData = {}
+        tag = ttf['STAT'].table.DesignAxisRecord.Axis[label.AxisIndex].AxisTag
+        value = label.Value
+        _addNames(ttf, labelData, label.ValueNameID)
+        labelData['elidable'] = bool(label.Flags & 2)
+        if label.Format == 3:
+            labelData['linkedValue'] = label.LinkedValue
+        vfData['axes'][tag]['labels'][value] = labelData
+
+    return vfData
+
+
 def _instantiate(
     inputFilename: str | PathLike,
     axisValues: dict[str, int | float],
@@ -63,6 +142,7 @@ def _doOpenVariableFont(
     axisValues: dict[str, int | float],
     varfont: ttLib.TTFont
 ) -> fontforge.font:
+    from fontforgeVF.utils import initPersistentDict
     from pathlib import Path
     import tempfile
 
@@ -76,6 +156,7 @@ def _doOpenVariableFont(
         for tag in list(unset):
             axisValues[tag] = [a.defaultValue for a in filter(lambda x: x.axisTag == tag, varfont["fvar"].axes)][0]
     _checkAxisValue(varfont, axisValues)  # out of range
+    vfData = _getVFData(varfont, axisValues)
     with tempfile.TemporaryDirectory() as tmpdir:
         stem = (
             Path(filename).stem + '_' +
@@ -90,7 +171,10 @@ def _doOpenVariableFont(
             if i := _searchInstance(varfont, axisValues):
                 _loadInstanceNames(varfont, partial, i.postscriptNameID, i.subfamilyNameID)
             partial.save(instancePath)
-        return fontforge.open(instancePath)
+        font = fontforge.open(instancePath)
+        initPersistentDict(font)
+        font.persistent['VF'] = vfData
+        return font
 
 
 def openVariableFont(
