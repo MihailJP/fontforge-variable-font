@@ -63,10 +63,7 @@ def _denormalize(minimum, default, maximum, value):
         return default
 
 
-def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
-    vfData = {
-        'axes': {},
-    }
+def _getVFData_fvar_axes(ttf: ttLib.TTFont, axisValues: dict[str, int | float], vfData: dict):
     for axis in ttf['fvar'].axes:
         tag = axis.axisTag
         axisData = {'active': True}
@@ -84,6 +81,19 @@ def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
         vfData['axes'][tag] = axisData
         vfData['axes'][tag]['labels'] = {}
 
+
+def _getVFData_fvar_instances(ttf: ttLib.TTFont, vfData: dict):
+    for instance in ttf['fvar'].instances:
+        instanceData = {}
+        psName = {}
+        _addNames(ttf, instanceData, instance.subfamilyNameID)
+        _addNames(ttf, psName, instance.postscriptNameID)
+        instanceData['psName'] = psName['name']
+        instanceData |= instance.coordinates
+        vfData['instances'].append(instanceData)
+
+
+def _getVFData_avar(ttf: ttLib.TTFont, vfData: dict):
     if 'avar' in ttf:
         for axis, segments in ttf['avar'].segments.items():
             minimum = vfData['axes'][axis]['minimum']
@@ -96,6 +106,8 @@ def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
                 ) for k, v in ttf['avar'].segments[axis].items()
             ]
 
+
+def _getVFData_STAT(ttf: ttLib.TTFont, vfData: dict):
     for axis in ttf['STAT'].table.DesignAxisRecord.Axis:
         if axis.AxisTag not in vfData['axes']:
             vfData['axes'][axis.AxisTag] = {
@@ -115,6 +127,18 @@ def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
             labelData['linkedValue'] = label.LinkedValue
         vfData['axes'][tag]['labels'][value] = labelData
 
+    return vfData
+
+
+def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
+    vfData = {
+        'axes': {},
+        'instances': [],
+    }
+    _getVFData_fvar_axes(ttf, axisValues, vfData)
+    _getVFData_fvar_instances(ttf, vfData)
+    _getVFData_avar(ttf, vfData)
+    _getVFData_STAT(ttf, vfData)
     return vfData
 
 
