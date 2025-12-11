@@ -68,6 +68,8 @@ def _loadLabels(tag: str, lang=None):
                     ',' + utils.getVFValue(font, labelAddr + '.name', '') + \
                     ', '
         return text[:-2]
+    elif utils.vfInfoExists(font):
+        return ''
     elif lang:
         return ''
     elif tag == 'wdth':
