@@ -9,6 +9,7 @@ from fontTools.designspaceLib import (
     AxisDescriptor,
     DiscreteAxisDescriptor,
     AxisLabelDescriptor,
+    InstanceDescriptor,
 )
 
 
@@ -256,6 +257,29 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument, filterItali
             doc.addAxis(a)
 
 
+def _designSpaceInstances(font: fontforge.font, doc: DesignSpaceDocument, filterItalicRoman: bool | None = None):
+    for instance in utils.getVFValue(font, 'instances', []):
+        i = InstanceDescriptor()
+        i.styleName = instance['name']
+        i.postScriptFontName = instance['psName']
+        location = {}
+        for k, v in designAxes.items():
+            if utils.getVFValue(font, 'axes.' + k + '.active', False):
+                tag = utils.getVFValue(font, 'axes.' + k + '.tag', '????') \
+                    if k.startswith('custom') else k
+                if tag == 'ital':
+                    location['ital'] = 1.0 if getAxisValue(font, 'ital') else 0.0
+                else:
+                    location[tag] = getAxisValue(font, tag)
+        if (
+            (filterItalicRoman is None) or
+            ('ital' not in location) or
+            (filterItalicRoman == bool(location['ital']))
+        ):
+            i.designLocation = location
+        doc.addInstance(i)
+
+
 def _makeDesignSpace(
     font: fontforge.font,
     outputDir: str | PathLike,
@@ -267,6 +291,7 @@ def _makeDesignSpace(
     doc = DesignSpaceDocument()
     _designSpaceSources(font, doc, filterItalicRoman)
     _designSpaceAxes(font, doc, filterItalicRoman)
+    _designSpaceInstances(font, doc, filterItalicRoman)
     doc.write(str(outputDir) + '/' + str(outputFile))
 
     # For debug

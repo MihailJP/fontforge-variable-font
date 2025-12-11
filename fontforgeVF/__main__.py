@@ -2,17 +2,10 @@ from fontforgeVF import (
     delete,
     design_axes,
     export,
+    instance,
     load
 )
 import fontforge
-
-
-def instanceMenu(u, glyph):
-    fontforge.postNotice("This is a mockup", "Not yet implemented!")
-
-
-def instanceEnable(u, glyph):
-    return False
 
 
 def fontforge_plugin_init(**kw):
@@ -47,11 +40,11 @@ def fontforge_plugin_init(**kw):
         name="Design _axes..."
     )
     fontforge.registerMenuItem(
-        callback=instanceMenu,
-        enable=instanceEnable,
+        callback=instance.instanceMenu,
+        enable=instance.instanceEnable,
         context="Font",
         submenu="_Variable Font",
-        name="_Instance list..."
+        name="Named _instances..."
     )
     fontforge.registerMenuItem(
         callback=delete.deleteVFInfoMenu,

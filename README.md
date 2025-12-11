@@ -57,7 +57,7 @@ menu which is dedicated for plugins.
     - By parameter...
   - Generate a variable font...
   - Design axes...
-  - Instance list... (not implemented)
+  - Named instances...
   - Delete VF info
 
 #### Open a variable font
@@ -342,7 +342,12 @@ fontforgeVF.setVFValue(fontCL, "axes.custom1.name", "User-defined axis")
 fontforgeVF.setVFValue(fontCL, "axes.custom1.order", 3)
 fontforgeVF.setVFValue(fontCL, "axes.custom1.localNames.de", "Benutzerdefinierte Achse")
 
-# Instances: not implemented
+# Instances
+fontforgeVF.setVFValue(fontCL, "instances[0].psName", "MyFont-ExtraLight")
+fontforgeVF.setVFValue(fontCL, "instances[0].name", "ExtraLight")
+fontforgeVF.setVFValue(fontCL, "instances[0].wght", 200)
+fontforgeVF.setVFValue(fontCL, "instances[0].wdth", 100)
+fontforgeVF.setVFValue(fontCL, "instances[0].ital", False)
 
 # Export TTF
 fontforgeVF.export(fontCL, 'MyFont.ttf')
