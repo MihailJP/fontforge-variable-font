@@ -129,6 +129,21 @@ def _getVFData_STAT(ttf: ttLib.TTFont, vfData: dict):
             vfData['axes'][tag]['labels'][value] = labelData
 
 
+def _getVFData_customTags(ttf: ttLib.TTFont, vfData: dict):
+    from fontforgeVF.design_axes import designAxes
+
+    customAxes = list(filter(lambda x: x not in designAxes.keys(), vfData['axes'].keys()))
+    for i, a in enumerate(customAxes):
+        if i < 3:
+            vfData['axes']['custom' + str(i + 1)] = vfData['axes'][a]
+            vfData['axes']['custom' + str(i + 1)]['tag'] = a
+            for instance in range(len(vfData['instances'])):
+                if a in vfData['instances'][instance]:
+                    vfData['instances'][instance]['custom' + str(i + 1)] = vfData['instances'][instance][a]
+        else:
+            fontforge.logWarning("Too many custom axes: '" + a + "' ignored")
+
+
 def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
     vfData = {
         'axes': {},
@@ -138,6 +153,7 @@ def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
     _getVFData_fvar_instances(ttf, vfData)
     _getVFData_avar(ttf, vfData)
     _getVFData_STAT(ttf, vfData)
+    _getVFData_customTags(ttf, vfData)
     return vfData
 
 

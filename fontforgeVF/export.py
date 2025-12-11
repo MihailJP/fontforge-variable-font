@@ -270,7 +270,7 @@ def _designSpaceInstances(font: fontforge.font, doc: DesignSpaceDocument, filter
                 if tag == 'ital':
                     location['ital'] = 1.0 if getAxisValue(font, 'ital') else 0.0
                 else:
-                    location[tag] = getAxisValue(font, tag)
+                    location[tag] = getAxisValue(font, k)
         if (
             (filterItalicRoman is None) or
             ('ital' not in location) or

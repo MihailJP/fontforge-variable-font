@@ -226,12 +226,13 @@ def _prepareQuestions_localNames(questions, k, v, languages, localNameRange, loc
 
 
 def _prepareQuestions_custom(questions, k, v):
+    font = fontforge.activeFont()
     if k.startswith('custom'):
         questions[1]["questions"].append({
             'type': 'string',
             'question': v["name"] + ' tag:',
             'tag': k + 'tag',
-            'default': '',
+            'default': utils.getVFValue(font, 'axes.' + k + '.tag', ''),
         })
 
 
