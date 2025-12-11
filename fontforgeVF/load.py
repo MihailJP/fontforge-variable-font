@@ -117,17 +117,16 @@ def _getVFData_STAT(ttf: ttLib.TTFont, vfData: dict):
             }
         vfData['axes'][axis.AxisTag]['order'] = axis.AxisOrdering
 
-    for label in ttf['STAT'].table.AxisValueArray.AxisValue:
-        labelData = {}
-        tag = ttf['STAT'].table.DesignAxisRecord.Axis[label.AxisIndex].AxisTag
-        value = label.Value
-        _addNames(ttf, labelData, label.ValueNameID)
-        labelData['elidable'] = bool(label.Flags & 2)
-        if label.Format == 3:
-            labelData['linkedValue'] = label.LinkedValue
-        vfData['axes'][tag]['labels'][value] = labelData
-
-    return vfData
+    if ttf['STAT'].table.AxisValueArray:
+        for label in ttf['STAT'].table.AxisValueArray.AxisValue:
+            labelData = {}
+            tag = ttf['STAT'].table.DesignAxisRecord.Axis[label.AxisIndex].AxisTag
+            value = label.Value
+            _addNames(ttf, labelData, label.ValueNameID)
+            labelData['elidable'] = bool(label.Flags & 2)
+            if label.Format == 3:
+                labelData['linkedValue'] = label.LinkedValue
+            vfData['axes'][tag]['labels'][value] = labelData
 
 
 def _getVFData(ttf: ttLib.TTFont, axisValues: dict[str, int | float]) -> dict:
