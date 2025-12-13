@@ -360,8 +360,8 @@ def designAxesMenu(u, glyph):
     default.)
 
     Sets the tag for each custom axis. A tag must be up to 4-letter
-    alphanumeric. Will be padded with implicit trailing spaces. Leave
-    them blank if not used.
+    alphanumeric. No known axis tags use less than 4 letters; if it
+    happens, pad with trailing space. Leave them blank if not used.
 
     Axis order
     ----------

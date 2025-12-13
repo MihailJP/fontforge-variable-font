@@ -168,11 +168,14 @@ This section is needed for default master (choose one master as
 default.)
 
 Sets the tag for each custom axis. A tag must be up to 4-letter
-alphanumeric. Will be padded with implicit trailing spaces. Leave
-them blank if not used.
+alphanumeric. No known axis tags use less than 4 letters; if it
+happens, pad with trailing space. Leave them blank if not used.
 
 > [!NOTE]
 > You must set a tag before a custom axis can be used.
+
+> [!NOTE]
+> Axis tags with less than 4 letters are not tested.
 
 > [!CAUTION]
 > Do not set tags which is duplicate or same as predefined ones, or
