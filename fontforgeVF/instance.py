@@ -138,6 +138,34 @@ def _saveInstances(result: dict):
 
 
 def instanceMenu(u, glyph):
+    """Menu entry to interactively set named instances for active font
+
+    Shows a dialog where you can set named instances.
+    Instance list is needed for default master (choose one master as
+    default.)
+
+    Instance
+    --------
+
+    At these pages you can set PostScript name, subfamily name, and
+    associated design positions on each axis.
+
+    By default the pages are named 'Instance 1' and so on, but will be
+    same as subfamily name if already set.
+
+    By default there is a room for 8 instances, but this will be
+    extended if already more than 4 instances are defined.
+
+    Localized names
+    ---------------
+
+    Instances can have translated names. Each page (or group or pages)
+    for each language. Choose a language from the list first. If there
+    are already 13 instances or more, multiple pages for each language.
+
+    By default there is a room for 8 languages, but this will be
+    extended if already more than 4 languages are defined.
+    """
     result = fontforge.askMulti("Named instances", _prepareQuestions())
     if result:
         _saveInstances(result)

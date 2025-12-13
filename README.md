@@ -235,8 +235,33 @@ extended if already more than 4 languages are defined.
 
 #### Instance list
 
+Shows a dialog where you can set named instances.
+Instance list is needed for default master (choose one master as
+default.)
+
 > [!NOTE]
-> This item is not yet implemented.
+> If there is already non-``dict`` value in ``font.persistent``, warns that
+> that data will be lost.
+
+##### Instance
+
+At these pages you can set PostScript name, subfamily name, and
+associated design positions on each axis.
+
+By default the pages are named 'Instance 1' and so on, but will be
+same as subfamily name if already set.
+
+By default there is a room for 8 instances, but this will be
+extended if already more than 4 instances are defined.
+
+##### Localized names
+
+Instances can have translated names. Each page (or group or pages)
+for each language. Choose a language from the list first. If there
+are already 13 instances or more, multiple pages for each language.
+
+By default there is a room for 8 languages, but this will be
+extended if already more than 4 languages are defined.
 
 #### Delete VF info
 
@@ -351,6 +376,7 @@ fontforgeVF.setVFValue(fontCL, "instances[0].name", "ExtraLight")
 fontforgeVF.setVFValue(fontCL, "instances[0].wght", 200)
 fontforgeVF.setVFValue(fontCL, "instances[0].wdth", 100)
 fontforgeVF.setVFValue(fontCL, "instances[0].ital", False)
+fontforgeVF.setVFValue(fontCL, "instances[0].localNames.0x407", "Extramager")
 
 # Export TTF
 fontforgeVF.export(fontCL, 'MyFont.ttf')
