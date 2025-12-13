@@ -1,4 +1,4 @@
-from fontforgeVF import utils, language
+from fontforgeVF import utils
 import fontforge
 
 
@@ -94,6 +94,7 @@ def _loadLabels(tag: str, lang=None):
 
 # Load values and make dialog components
 def _prepareQuestions_languages(questions):
+    from fontforgeVF.language import getLanguageList
     font = fontforge.activeFont()
     languages = set()
     for k, v in designAxes.items():
@@ -102,25 +103,9 @@ def _prepareQuestions_languages(questions):
     localNameCategory = len(questions)
     localNameRange = range(1, max(((len(languages) + 7) // 4) * 4, 8)+1)
     for i in localNameRange:
-        defaultCode = languages[i-1] if i <= len(languages) else ''
-        languageList = [
-            {'name': '', 'tag': '', 'default': defaultCode == ''}
-        ]
-        for langId, langCode, langName in sorted(language.languageCodeIterator(), key=lambda x: x[2]):
-            languageList.append({'name': langName, 'tag': hex(langId), 'default': langId == defaultCode})
-        questions.append({
-            'category': 'Localized names ' + (
-                language.languageCodeLookup(languages[i-1]) if i <= len(languages) else str(i)
-            ),
-            'questions': [
-                {
-                    'type': 'choice',
-                    'question': 'Language:',
-                    'tag': 'lang' + str(i),
-                    'answers': languageList,
-                },
-            ],
-        })
+        questions.append(
+            getLanguageList(i, languages[i-1] if i <= len(languages) else None)
+        )
     return languages, localNameCategory, localNameRange
 
 

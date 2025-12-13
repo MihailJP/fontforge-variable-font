@@ -52,19 +52,68 @@ def _prepareQuestions_instances(cnt: int):
     return questions
 
 
+def _prepareQuestions_instanceLocalNames(questions: list):
+    from fontforgeVF.language import getLanguageList
+    from math import ceil
+
+    font = fontforge.activeFont()
+    numberOfInstances = max(((len(utils.getVFValue(font, 'instances', [])) + 7) // 4) * 4, 8)
+
+    languages = set()
+    numberOfLanguages = 8
+    for i in range(len(utils.getVFValue(font, 'instances', []))):
+        for k, v in designAxes.items():
+            languages |= set(utils.getVFValue(font, 'instances[' + str(i) + '].localNames', {}).keys())
+    languages = tuple(languages)
+    numberOfLanguages = max(((len(languages) + 7) // 4) * 4, 8)
+
+    for i in range(numberOfLanguages):
+        lang = languages[i] if i < len(languages) else None
+        page = getLanguageList(i + 1, lang)
+        pageLabel = page['category']
+        pages = ceil((numberOfInstances + 4) / 20)
+        if pages >= 2:
+            page['category'] = pageLabel + ' (1)'
+        pageBreakAfter = list(
+            range(numberOfInstances)
+        )[::-ceil((numberOfInstances + 4) / pages)][1:]
+        currentPage = 1
+        for j in range(numberOfInstances):
+            page['questions'].append({
+                'type': 'string',
+                'question': _instances_getval(font, j + 1, 'name', 'Instance ' + str(j + 1)),
+                'tag': 'lang' + str(i + 1) + 'name' + str(j + 1),
+                'default': utils.getVFValue(
+                    font, 'instances[' + str(j) + '].localNames.' + str(lang), ''
+                ),
+            })
+            if j in pageBreakAfter:
+                questions.append(page)
+                currentPage += 1
+                page = {
+                    'category': pageLabel + ' (' + str(currentPage) + ')',
+                    'questions': []
+                }
+        questions.append(page)
+    return questions
+
+
 def _prepareQuestions():
     font = fontforge.activeFont()
     questions = []
-    for i in range(max(((len(utils.getVFValue(font, 'instances', [])) + 7) // 4) * 4, 8)):
+    numberOfInstances = max(((len(utils.getVFValue(font, 'instances', [])) + 7) // 4) * 4, 8)
+
+    for i in range(numberOfInstances):
         questions.append({
             'category': _instances_getval(font, i + 1, 'name', 'Instance ' + str(i + 1)),
             'questions': _prepareQuestions_instances(i + 1)
         })
+
+    _prepareQuestions_instanceLocalNames(questions)
     return questions
 
 
 def _saveInstances(result: dict):
-    print(result)
     font = fontforge.activeFont()
     instanceList = []
     cnt = 1
@@ -79,6 +128,10 @@ def _saveInstances(result: dict):
                     instance['ital'] = bool(int(result['ital_' + str(cnt)]))
                 else:
                     instance[k] = utils.intOrFloat(result[k + '_' + str(cnt)])
+            instance['localNames'] = {}
+            for lang in filter(lambda x: x.startswith('lang') and x.find('name') == -1, result.keys()):
+                if result[lang] and result[lang + 'name' + str(cnt)]:
+                    instance['localNames'][utils.intOrFloat(result[lang])] = result[lang + 'name' + str(cnt)]
             instanceList.append(instance)
         cnt += 1
     utils.setVFValue(font, 'instances', instanceList)

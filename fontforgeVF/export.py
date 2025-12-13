@@ -11,6 +11,7 @@ from fontTools.designspaceLib import (
     AxisLabelDescriptor,
     InstanceDescriptor,
 )
+from fontTools import ttLib
 
 
 __all__ = [
@@ -333,37 +334,55 @@ _fields = {  # From python.c
 }
 
 
+def _fixTtf_axes(font: fontforge.font, ttf: ttLib.TTFont):
+    for k, v in designAxes.items():
+        tag = (
+            utils.getVFValue(font, 'axes.' + k + '.tag', '????')
+            if k.startswith('custom') else k
+        )
+        if utils.getVFValue(font, 'axes.' + k + '.active', False):
+            localNames = utils.getVFValue(font, 'axes.' + k + '.localNames', {})
+            for lang, name in localNames.items():
+                axis = list(filter(lambda x: x.axisTag == tag, ttf["fvar"].axes))
+                if axis:
+                    ttf['name'].setName(name, axis[0].axisNameID, 3, 1, lang)
+
+
+def _fixTtf_labels(font: fontforge.font, ttf: ttLib.TTFont):
+    for axisLabel in ttf['STAT'].table.AxisValueArray.AxisValue:
+        axisIndex = axisLabel.AxisIndex
+        tag = ttf['STAT'].table.DesignAxisRecord.Axis[axisIndex].AxisTag
+        value = axisLabel.Value
+        localNames = utils.getVFValue(
+            font, 'axes.' + tag + '.labels.' + str(int(value)) + '.localNames',
+            utils.getVFValue(
+                font, 'axes.' + tag + '.labels.' + str(float(value)).replace('.', ',') + '.localNames',
+                {}
+            )
+        )
+        for lang, name in localNames.items():
+            ttf['name'].setName(name, axisLabel.ValueNameID, 3, 1, lang)
+
+
+def _fixTtf_instances(font: fontforge.font, ttf: ttLib.TTFont):
+    for i, instance in enumerate(ttf['fvar'].instances):
+        subfamilyNameID = instance.subfamilyNameID
+        localNames = utils.getVFValue(
+            font, 'instances[' + str(i) + '].localNames', {}
+        )
+        for lang, name in localNames.items():
+            ttf['name'].setName(name, subfamilyNameID, 3, 1, lang)
+
+
 def _fixTtf(font: fontforge.font, filename: str | PathLike):
-    from fontTools import ttLib
     with ttLib.TTFont(str(filename)) as ttf:
         for i in font.sfnt_names:
             if i[0] != 'English (US)':
                 if i[1] in _fields:
                     ttf['name'].setName(i[2], _fields[i[1]], 3, 1, language.languageCodeReverseLookup(i[0]))
-        for k, v in designAxes.items():
-            tag = (
-                utils.getVFValue(font, 'axes.' + k + '.tag', '????')
-                if k.startswith('custom') else k
-            )
-            if utils.getVFValue(font, 'axes.' + k + '.active', False):
-                localNames = utils.getVFValue(font, 'axes.' + k + '.localNames', {})
-                for lang, name in localNames.items():
-                    axis = list(filter(lambda x: x.axisTag == tag, ttf["fvar"].axes))
-                    if axis:
-                        ttf['name'].setName(name, axis[0].axisNameID, 3, 1, lang)
-        for axisLabel in ttf['STAT'].table.AxisValueArray.AxisValue:
-            axisIndex = axisLabel.AxisIndex
-            tag = ttf['STAT'].table.DesignAxisRecord.Axis[axisIndex].AxisTag
-            value = axisLabel.Value
-            localNames = utils.getVFValue(
-                font, 'axes.' + tag + '.labels.' + str(int(value)) + '.localNames',
-                utils.getVFValue(
-                    font, 'axes.' + tag + '.labels.' + str(float(value)).replace('.', ',') + '.localNames',
-                    {}
-                )
-            )
-            for lang, name in localNames.items():
-                ttf['name'].setName(name, axisLabel.ValueNameID, 3, 1, lang)
+        _fixTtf_axes(font, ttf)
+        _fixTtf_labels(font, ttf)
+        _fixTtf_instances(font, ttf)
         ttf.save(filename)
 
 

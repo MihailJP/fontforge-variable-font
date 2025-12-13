@@ -2,6 +2,7 @@ __all__ = [
     'languageCodeIterator',
     'languageCodeLookup',
     'languageCodeReverseLookup',
+    'getLanguageList',
 ]
 
 languageData = {
@@ -822,3 +823,25 @@ def languageCodeReverseLookup(langName: str) -> int | None:
         if n == langName:
             return i
     return None
+
+
+def getLanguageList(listNumber: int, defaultCode: int | None = None):
+    languageList = [
+        {'name': '', 'tag': '', 'default': defaultCode is None}
+    ]
+    for langId, langCode, langName in sorted(languageCodeIterator(), key=lambda x: x[2]):
+        languageList.append({'name': langName, 'tag': hex(langId), 'default': langId == defaultCode})
+    questions = {
+        'category': 'Localized names ' + (
+            languageCodeLookup(defaultCode) if defaultCode else str(listNumber)
+        ),
+        'questions': [
+            {
+                'type': 'choice',
+                'question': 'Language:',
+                'tag': 'lang' + str(listNumber),
+                'answers': languageList,
+            },
+        ],
+    }
+    return questions
