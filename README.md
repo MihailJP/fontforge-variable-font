@@ -41,11 +41,6 @@ export PYTHONPATH=/path/to/fontforge/python/module:$PYTHONPATH
 Usage
 -----
 
-> [!IMPORTANT]
-> Since the plugin feature has been hardly (maybe never) used (hence it can
-> be tested not well,) Fontforge may crash especially after a dialog is shown.
-> You are advised to back up your font project before use.
-
 ### Interactive usage
 
 As a Fontforge plugin, fontforgeVF adds 'Variable Font' submenu to 'Tools'
@@ -60,9 +55,19 @@ menu which is dedicated for plugins.
   - Named instances...
   - Delete VF info
 
+> [!IMPORTANT]
+> Since the plugin feature has been hardly (maybe never) used (hence it can
+> be tested not well,) Fontforge may crash especially after a dialog is shown.
+> You are advised to back up your font project before use.
+
 #### Open a variable font
 
 Shows a dialog to open a variable font
+
+> [!TIP]
+> If you open a webfont (WOFF2,) the plugin will first copy it to a temporary
+> directory, then decompress with calling ``woff2_decompress`` in order to
+> open as a TTF.
 
 > [!TIP]
 > VF-specific metadata will be loaded to ``font.persistent``.
@@ -75,10 +80,17 @@ Open file dialog is shown first. If a variable font is selected, then another
 dialog is shown to select (one or more) named instances. If a non-variable
 font is selected, simply opens that font.
 
+> [!NOTE]
+> If an empty list gets shown, the font does not have any named instances.
+> Use 'By parameter' in such case.
+
 ##### By parameter
 
 Like above, but the second dialog is not to select a named instance, but to
 specify design axis parameters.
+
+> [!TIP]
+> Valid range will be shown together with the name for each axis.
 
 #### Generate a variable font
 
@@ -101,14 +113,15 @@ export incompatible 'aalt' feature (concretely 'script' or 'language'
 instructions must not be included unlike other features.) This
 function fix this first.
 
+> [!TIP]
+> You do not have to add 'aalt' lookups manually. You can still do it for
+> 'aalt'-only glyph substitutions.
+
 Currently available options:
 
 - Remove nested refs: Tell fontmake to decompose nested references into simple
   ones. Nested references are known to cause problems in certain environments.
 - Add 'aalt' feature: Calculate and output 'aalt' feature to UFO.
-
-> [!TIP]
-> You do not have to add 'aalt' lookups manually.
 
 > [!TIP]
 > To generate web font (instead of TTF), specify output file name ending
@@ -158,6 +171,27 @@ use default values which refers font properties.
   999 (extreme bold.)
 * Custom axes: there is a room for 3 user-defined axes. No default
   values.
+
+> [!TIP]
+> You can find an example of custom axes at [Google Fonts][1] site, and they
+> are explained at the [glossary](https://fonts.google.com/knowledge/glossary).
+
+[1]: https://fonts.google.com/?categoryFilters=Technology:%2FTechnology%2FVariable
+
+> [!NOTE]
+> 'Italic' axis is exceptionally treated. Unlike other axes, it cannot be
+> interpolated (anything like "semi-italic" will never be available.)
+> Roman and italic styles will be exported separately, hence you do not have
+> to match numbers of points or of contours between them.
+
+> [!IMPORTANT]
+> Custom axes will not be treated like italic axis. If you want custom
+> discrete axes, you must open only those masters which have the same
+> positions on such axes at once. For example,
+> [wonky axis](https://fonts.google.com/knowledge/glossary/wonky_axis)
+> allows only 0 (off) or 1 (on;) you must open masters with WONK=0 and
+> generate WONK=0 VF first, close all masters and then open WONK=1 masters
+> and generate VF.
 
 ##### Custom axes
 
@@ -230,6 +264,10 @@ extended if already more than 4 languages are defined.
   * Axis value
   * Name
 
+> [!CAUTION]
+> Do not select the same language more than once, or undefined behavior will
+> occur.
+
 #### Instance list
 
 Shows a dialog where you can set named instances.
@@ -259,6 +297,10 @@ are already 13 instances or more, multiple pages for each language.
 
 By default there is a room for 8 languages, but this will be
 extended if already more than 4 languages are defined.
+
+> [!CAUTION]
+> Do not select the same language more than once, or undefined behavior will
+> occur.
 
 #### Delete VF info
 
@@ -336,7 +378,7 @@ fontforgeVF.setVFValue(fontCL, "axes.wdth.name", "Width")
 fontforgeVF.setVFValue(fontCL, "axes.wdth.order", 0)
 fontforgeVF.setVFValue(fontCL, "axes.wdth.map[0]", (50, 50))
 fontforgeVF.setVFValue(fontCL, "axes.wdth.map[1]", (200, 200))
-fontforgeVF.setVFValue(fontCL, "axes.wdth.localNames.0x407", "Laufweite")
+fontforgeVF.setVFValue(fontCL, "axes.wdth.localNames.0x407", "Laufweite")  # 0x407 stands for German (Germany)
 fontforgeVF.setVFValue(fontCL, "axes.ital.name", "Italic")
 fontforgeVF.setVFValue(fontCL, "axes.ital.order", 2)
 fontforgeVF.setVFValue(fontCL, "axes.ital.localNames.0x407", "Kursiv")
@@ -384,3 +426,44 @@ fontforgeVF.export(fontCL, 'MyFont.woff2')
 # In case you want to drop the VF info
 fontforgeVF.deleteVFInfo(fontCL)
 ```
+
+#### Some example of language codes
+
+| Code   | Language                     |
+|-------:|:-----------------------------|
+| 0x401  | Arabic (Saudi Arabia)        |
+| 0xc01  | Arabic (Egypt)               |
+| 0x403  | Catalan                      |
+| 0x404  | Chinese (Taiwan)             |
+| 0x804  | Chinese (Mainland)           |
+| 0xc04  | Chinese (Hong Kong)          |
+| 0x407  | German (Germany)             |
+| 0x807  | German (Switzerland)         |
+| 0x408  | Greek                        |
+| 0x409  | English (US) (default)       |
+| 0x809  | English (UK)                 |
+| 0xc09  | English (Australia)          |
+| 0x1009 | English (Canada)             |
+| 0x1409 | English (New Zealand)        |
+| 0x80a  | Spanish (Mexico)             |
+| 0xc0a  | Spanish (Spain, modern sort) |
+| 0x40c  | French (France)              |
+| 0x80c  | French (Belgium)             |
+| 0xc0c  | French (Canada)              |
+| 0x100c | French (Switzerland)         |
+| 0x40d  | Hebrew                       |
+| 0x410  | Italian (Italy)              |
+| 0x810  | Italian (Switzerland)        |
+| 0x411  | Japanese                     |
+| 0x412  | Korean                       |
+| 0x413  | Dutch                        |
+| 0x813  | Flemish                      |
+| 0x416  | Portuguese (Brazil)          |
+| 0x816  | Portuguese (Portugal)        |
+| 0x417  | Romansh                      |
+| 0x419  | Russian                      |
+| 0x420  | Urdu                         |
+| 0x439  | Hindi                        |
+
+> [!NOTE]
+> Language code 0x409 (American English) is used as default and specially treated. You do not have to use it for ``localName``.
