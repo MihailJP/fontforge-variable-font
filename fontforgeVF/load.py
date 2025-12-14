@@ -1,5 +1,5 @@
 import fontforge
-from fontforgeVF.utils import intOrFloat
+from fontforgeVF.utils import intOrFloat, checkExtensionTtfOrWoff2
 from os import PathLike
 from fontTools import ttLib
 import faulthandler
@@ -179,11 +179,11 @@ def _instantiate(
 def _doOpenVariableFont(
     filename: str | PathLike,
     axisValues: dict[str, int | float],
-    varfont: ttLib.TTFont
+    varfont: ttLib.TTFont,
+    tmpdir: str | PathLike,
 ) -> fontforge.font:
     from fontforgeVF.utils import initPersistentDict
     from pathlib import Path
-    import tempfile
 
     axes = [a.axisTag for a in filter(lambda x: x.minValue < x.maxValue, varfont["fvar"].axes)]
     if extra := set(axisValues.keys()) - set(axes):  # extra axes set
@@ -196,24 +196,74 @@ def _doOpenVariableFont(
             axisValues[tag] = [a.defaultValue for a in filter(lambda x: x.axisTag == tag, varfont["fvar"].axes)][0]
     _checkAxisValue(varfont, axisValues)  # out of range
     vfData = _getVFData(varfont, axisValues)
-    with tempfile.TemporaryDirectory() as tmpdir:
-        stem = (
-            Path(filename).stem + '_' +
-            '_'.join([str(k) + str(v) for k, v in axisValues.items()])
-        )
+
+    stem = (
+        Path(filename).stem + '_' +
+        '_'.join([str(k) + str(v) for k, v in axisValues.items()])
+    )
+    if i := _searchInstance(varfont, axisValues):
+        n = str(varfont['name'].getName(i.postscriptNameID, 3, 1, 0x409))
+        if n:
+            stem = n
+    instancePath = str(tmpdir) + '/' + stem + '.ttf'
+    with _instantiate(filename, axisValues, instancePath) as partial:
         if i := _searchInstance(varfont, axisValues):
-            n = str(varfont['name'].getName(i.postscriptNameID, 3, 1, 0x409))
-            if n:
-                stem = n
-        instancePath = tmpdir + '/' + stem + '.ttf'
-        with _instantiate(filename, axisValues, instancePath) as partial:
-            if i := _searchInstance(varfont, axisValues):
-                _loadInstanceNames(varfont, partial, i.postscriptNameID, i.subfamilyNameID)
-            partial.save(instancePath)
-        font = fontforge.open(instancePath)
-        initPersistentDict(font)
-        font.persistent['VF'] = vfData
-        return font
+            _loadInstanceNames(varfont, partial, i.postscriptNameID, i.subfamilyNameID)
+        partial.save(instancePath)
+    font = fontforge.open(instancePath)
+    initPersistentDict(font)
+    font.persistent['VF'] = vfData
+    return font
+
+
+def _openVF(
+    filename: str | PathLike,
+    axisValuesOrInstance: int | str | dict[str, int | float],
+    tmpdir: str | PathLike
+) -> fontforge.font:
+    with ttLib.TTFont(filename) as ttf:
+        if 'fvar' not in ttf:
+            return fontforge.open(filename)
+        elif isinstance(axisValuesOrInstance, dict):
+            if list(filter(lambda x: x.minValue != x.maxValue, ttf['fvar'].axes)):
+                return _doOpenVariableFont(filename, axisValuesOrInstance, ttf, tmpdir)
+            else:
+                return fontforge.open(filename)
+        elif isinstance(axisValuesOrInstance, int):
+            return _doOpenVariableFont(
+                filename,
+                ttf['fvar'].instances[axisValuesOrInstance].coordinates,
+                ttf,
+                tmpdir
+            )
+        elif isinstance(axisValuesOrInstance, str):
+            return _doOpenVariableFont(
+                filename,
+                list(filter(
+                    lambda x: str(ttf['name'].getName(x.subfamilyNameID, 3, 1, 0x409)) == axisValuesOrInstance,
+                    ttf['fvar'].instances
+                ))[0].coordinates,
+                ttf,
+                tmpdir
+            )
+        else:
+            raise TypeError('incompatible type for axisValuesOrInstance')
+
+
+def _woff2Decompress(filename: str | PathLike, tmpdir: str | PathLike) -> str:
+    import shutil
+    from pathlib import Path
+    from subprocess import run
+    from sys import stderr
+
+    woffFile = str(Path(tmpdir, Path(filename).name))
+    shutil.copy2(filename, woffFile)
+    result = run(
+        ['woff2_decompress', woffFile],
+        check=True, text=True, capture_output=fontforge.hasUserInterface())
+    if fontforge.hasUserInterface():
+        stderr.write(result.stderr)
+    return str(Path(woffFile).stem) + '.ttf'
 
 
 def openVariableFont(
@@ -225,7 +275,8 @@ def openVariableFont(
     Fontforge cannot treat variable fonts themselves, so they must be
     instantiated.
 
-    :param filename: Variable font file to read. Must end with '.ttf'.
+    :param filename: Variable font file to read. Must end with '.ttf' \
+    or '.woff2'.
     :param axisValuesOrInstance: If ``int``, an index of the named \
     instance list (0 for the first instance). If ``str``, the name of \
     an instance. If ``dict``, axis tags as its keys and axis positions \
@@ -235,34 +286,18 @@ def openVariableFont(
     :raises ``ValueError``: When ``axisValuesOrInstance`` is a \
     ``dict``, at least one value of design axes is out of range
     """
-    with ttLib.TTFont(filename) as ttf:
-        if 'fvar' not in ttf:
-            return fontforge.open(filename)
-        elif isinstance(axisValuesOrInstance, dict):
-            if list(filter(lambda x: x.minValue != x.maxValue, ttf['fvar'].axes)):
-                return _doOpenVariableFont(filename, axisValuesOrInstance, ttf)
-            else:
-                return fontforge.open(filename)
-        elif isinstance(axisValuesOrInstance, int):
-            return _doOpenVariableFont(
-                filename,
-                ttf['fvar'].instances[axisValuesOrInstance].coordinates,
-                ttf
-            )
-        elif isinstance(axisValuesOrInstance, str):
-            return _doOpenVariableFont(
-                filename,
-                list(filter(
-                    lambda x: str(ttf['name'].getName(x.subfamilyNameID, 3, 1, 0x409)) == axisValuesOrInstance,
-                    ttf['fvar'].instances
-                ))[0].coordinates,
-                ttf
-            )
-        else:
-            raise TypeError('incompatible type for axisValuesOrInstance')
+    import tempfile
+
+    filetype = checkExtensionTtfOrWoff2(filename)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        if filetype == 'ttf':
+            _openVF(filename, axisValuesOrInstance, tmpdir)
+        else:  # woff2
+            ttFile = _woff2Decompress(filename, tmpdir)
+            _openVF(ttFile, axisValuesOrInstance, tmpdir)
 
 
-def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont):
+def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str | PathLike):
     assert 'fvar' in ttf
     questions = []
     for axis in ttf['fvar'].axes:
@@ -281,10 +316,10 @@ def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont):
     if result := fontforge.askMulti('Please specify an instance to open', questions):
         for key in result:
             result[key] = intOrFloat(result[key])
-        _doOpenVariableFont(filename, result, ttf)
+        _doOpenVariableFont(filename, result, ttf, tmpdir)
 
 
-def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont):
+def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str | PathLike):
     assert 'fvar' in ttf
     result = fontforge.askChoices(
         'Choose instance(s) to open',
@@ -293,15 +328,23 @@ def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont):
         multiple=True
     )
     for i in [i[1] for i in list(filter(lambda x: x[0], zip(result, ttf['fvar'].instances)))]:
-        _doOpenVariableFont(filename, i.coordinates, ttf)
+        _doOpenVariableFont(filename, i.coordinates, ttf, tmpdir)
 
 
 def _selectInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, dialogType):
+    import tempfile
+
     assert 'fvar' in ttf
-    if dialogType == 0:
-        _chooseInstanceDialog(filename, ttf)
-    else:
-        _setParameterDialog(filename, ttf)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        filetype = checkExtensionTtfOrWoff2(filename)
+        ttFile = filename
+        if filetype == 'woff2':
+            ttFile = _woff2Decompress(filename, tmpdir)
+
+        if dialogType == 0:
+            _chooseInstanceDialog(ttFile, ttf, tmpdir)
+        else:
+            _setParameterDialog(ttFile, ttf, tmpdir)
 
 
 def loadMenu(u, glyph):
@@ -312,7 +355,7 @@ def loadMenu(u, glyph):
     non-variable font is selected, simply opens that font.
     """
     faulthandler.enable()
-    if filename := fontforge.openFilename('Open a variable font', '', '*.ttf'):
+    if filename := fontforge.openFilename('Open a variable font', '', '*.{ttf,woff2}'):
         with ttLib.TTFont(filename) as ttf:
             if 'fvar' not in ttf:
                 fontforge.logWarning(filename + " does not have 'fvar' table")

@@ -1,5 +1,6 @@
 import fontforge
 import re
+from os import PathLike
 
 
 __all__ = [
@@ -11,6 +12,7 @@ __all__ = [
     "deleteEmptyDicts",
     "deleteVFValue",
     "setOrDeleteVFValue",
+    "checkExtensionTtfOrWoff2",
 ]
 
 
@@ -304,3 +306,18 @@ def setOrDeleteVFValue(font: fontforge.font, key: str, val):
         deleteVFValue(font, key)
     else:
         setVFValue(font, key, val)
+
+
+def checkExtensionTtfOrWoff2(filename: str | PathLike) -> str:
+    """Checks the suffix (extension) of given file
+
+    :param filename: Path to font file
+    :return: 'ttf' or 'woff2'
+    :raises ``ValueError``: if ``filename`` is neither
+    """
+    if str(filename).endswith('.ttf'):
+        return 'ttf'
+    elif str(filename).endswith('.woff2'):
+        return 'woff2'
+    else:
+        raise ValueError("'" + str(filename) + "' has unexpected extension")

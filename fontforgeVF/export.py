@@ -299,15 +299,6 @@ def _makeDesignSpace(
     # shutil.copyfile(str(outputDir) + '/' + str(outputFile), "./" + str(outputFile))
 
 
-def _checkExtensionTtfOrWoff2(filename: str | PathLike) -> str:
-    if str(filename).endswith('.ttf'):
-        return 'ttf'
-    elif str(filename).endswith('.woff2'):
-        return 'woff2'
-    else:
-        raise ValueError("'" + str(filename) + "' has unexpected extension")
-
-
 _fields = {  # From python.c
     "SubFamily": 2,
     "Copyright": 0,
@@ -406,7 +397,7 @@ def _doExportVF(
     if fontforge.hasUserInterface():
         stderr.write(result.stderr)
     _fixTtf(font, ttFile)
-    if _checkExtensionTtfOrWoff2(filename) == 'woff2':
+    if utils.checkExtensionTtfOrWoff2(filename) == 'woff2':
         result = run(
             ['woff2_compress', ttFile],
             check=True, text=True, capture_output=fontforge.hasUserInterface())
@@ -498,12 +489,12 @@ def exportVariableFont(
     example, it is an error if inconsistent number of points or contours \
     among masters.
     """
-    _checkExtensionTtfOrWoff2(filename)
+    utils.checkExtensionTtfOrWoff2(filename)
     need2files = False
     if _hasBothRomanAndItalic(font):
         need2files = True
         if italicFilename is not None:
-            _checkExtensionTtfOrWoff2(italicFilename)
+            utils.checkExtensionTtfOrWoff2(italicFilename)
     with tempfile.TemporaryDirectory() as tmpdir:
         s = 0
         for f in _getSourceFonts(font):
@@ -561,7 +552,7 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
                 'default':
                     font.default_base_filename + '.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '.ttf',
-                'filter': '*.ttf',
+                'filter': '*.{ttf,woff2}',
             },
         ]
     questions += [

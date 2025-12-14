@@ -64,9 +64,6 @@ menu which is dedicated for plugins.
 
 Shows a dialog to open a variable font
 
-> [!NOTE]
-> Variable fonts in WOFF2 format are not supported yet.
-
 > [!TIP]
 > VF-specific metadata will be loaded to ``font.persistent``.
 > Minimum, default, and maximum values of axis values are also loaded in
