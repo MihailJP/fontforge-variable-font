@@ -226,13 +226,13 @@ def openVariableFont(
     instantiated.
 
     :param filename: Variable font file to read. Must end with '.ttf'.
-    :param axisValuesOrInstance: If ``int``, an index of the named
-    instance list (0 for the first instance). If ``str``, the name of
-    an instance. If ``dict``, axis tags as its keys and axis positions
+    :param axisValuesOrInstance: If ``int``, an index of the named \
+    instance list (0 for the first instance). If ``str``, the name of \
+    an instance. If ``dict``, axis tags as its keys and axis positions \
     as their values.
-    :raises ``IndexError``: When ``axisValuesOrInstance`` is an
+    :raises ``IndexError``: When ``axisValuesOrInstance`` is an \
     ``int``, the index of the instance list is out of range.
-    :raises ``ValueError``: When ``axisValuesOrInstance`` is a
+    :raises ``ValueError``: When ``axisValuesOrInstance`` is a \
     ``dict``, at least one value of design axes is out of range
     """
     with ttLib.TTFont(filename) as ttf:

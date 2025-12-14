@@ -51,7 +51,7 @@ def initPersistentDict(font: fontforge.font):
     active, asks the user before deletes it. If not running
     interactively, it will be deleted without warning.
 
-    :raises ``RuntimeError``: user refused to delete existing
+    :raises ``RuntimeError``: user refused to delete existing \
     ``font.persistent``.
     """
     if font.persistent is None:
@@ -117,14 +117,16 @@ def getVFValue(font: fontforge.font, key: str, default=None):
     Gets a value from nested ``dict`` in ``font.persistent.VF``. If
     given key does not exist, uses default value.
 
-    :param font: Fontforge font object
-    :param key: Name of key. Use dots for nested ``dict`` like
+    For the name of a key, use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key is a ``float`` value, a comma
     (continental decimal separator) should be used since a dot
     (Anglo-American decimal separator) conflicts with hierarchical
     separator.
-    :param default: Optional. Returns this value if ``key`` does not
+
+    :param font: Fontforge font object
+    :param key: Name of key
+    :param default: Optional. Returns this value if ``key`` does not \
     exist. Without this parameter defaults to ``None``.
     :return: the value for ``key``, or ``default`` if no such ``key``.
     """
@@ -162,13 +164,15 @@ def setVFValue(font: fontforge.font, key: str, val):
     Sets a value in a nested ``dict`` in ``font.persistent.VF``. If
     given key does not exist, it is recursively created.
 
-    :param font: Fontforge font object
-    :param key: Name of key. Use dots for nested ``dict`` like
+    For the name of a key, use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key is a ``float`` value, a comma
     (continental decimal separator) should be used since a dot
     (Anglo-American decimal separator) conflicts with hierarchical
     separator.
+
+    :param font: Fontforge font object
+    :param key: Name of key
     :param val: A value to set. this can be anything picklable.
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """
@@ -235,13 +239,15 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
     given key does not exist, it does nothing. Resulting empty ``dict``
     will also deleted recursively.
 
-    :param font: Fontforge font object
-    :param key: Name of key. Use dots for nested ``dict`` like
+    For the name of a key, use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key is a ``float`` value, a comma
     (continental decimal separator) should be used since a dot
     (Anglo-American decimal separator) conflicts with hierarchical
     separator.
+
+    :param font: Fontforge font object
+    :param key: Name of key
     :return: ``True`` if the key was deleted, ``False`` otherwise.
     """
     if vfInfoExists(font):
@@ -282,13 +288,15 @@ def setOrDeleteVFValue(font: fontforge.font, key: str, val):
     If ``val`` is ``None``, calls ``deleteVFValue``. Otherwise, calls
     ``setVFValue``.
 
-    :param font: Fontforge font object
-    :param key: Name of key. Use dots for nested ``dict`` like
+    For the name of a key, use dots for nested ``dict`` like
     ``axes.wght``. Numeric keys are recognized and stored as numeric
     (``int`` or ``float``). If key is a ``float`` value, a comma
     (continental decimal separator) should be used since a dot
     (Anglo-American decimal separator) conflicts with hierarchical
     separator.
+
+    :param font: Fontforge font object
+    :param key: Name of key
     :param val: A value to set. this can be anything picklable.
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """

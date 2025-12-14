@@ -482,20 +482,20 @@ def exportVariableFont(
     instructions must not be included unlike other features.) This
     function fix this first.
 
-    :param font: Main font which font-family-wide parameters are set.
+    :param font: Main font which font-family-wide parameters are set. \
     Fontforge font object.
     :param filename: Output file name. Must end with '.ttf' or '.woff2'.
-    :param italicFilename: Secondary output file name for italic. Must
-    end with '.ttf'. Required if the font family has both roman and
+    :param italicFilename: Secondary output file name for italic. Must \
+    end with '.ttf'. Required if the font family has both roman and \
     italic styles
-    :param decomposeNestedRefs: Optional. Nested references are known to
-    cause problems in certain environments; if ``True``, resulting font
+    :param decomposeNestedRefs: Optional. Nested references are known to \
+    cause problems in certain environments; if ``True``, resulting font \
     will decompose such references. Defaults to ``False``.
     :param addAalt: Adds 'aalt' feature. Defaults to ``False``.
-    :raises ``ValueError``: ``filename`` or ``italicFilename`` ends with
+    :raises ``ValueError``: ``filename`` or ``italicFilename`` ends with \
     unexpected extension.
-    :raises ``CalledProcessError``: 'fontmake' ended abnormally. For
-    example, it is an error if inconsistent number of points or contours
+    :raises ``CalledProcessError``: 'fontmake' ended abnormally. For \
+    example, it is an error if inconsistent number of points or contours \
     among masters.
     """
     _checkExtensionTtfOrWoff2(filename)
