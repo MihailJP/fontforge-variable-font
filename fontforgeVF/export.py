@@ -478,8 +478,8 @@ def exportVariableFont(
     Fontforge font object.
     :param filename: Output file name. Must end with '.ttf' or '.woff2'.
     :param italicFilename: Secondary output file name for italic. Must \
-    end with '.ttf'. Required if the font family has both roman and \
-    italic styles
+    end with '.ttf' or '.woff2'. Required if the font family has both \
+    roman and italic styles
     :param decomposeNestedRefs: Optional. Nested references are known to \
     cause problems in certain environments; if ``True``, resulting font \
     will decompose such references. Defaults to ``False``.
