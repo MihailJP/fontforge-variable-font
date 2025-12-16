@@ -443,6 +443,7 @@ def exportVariableFont(
     font: fontforge.font,
     filename: str | PathLike,
     italicFilename: str | PathLike | None = None,
+    *,
     decomposeNestedRefs: bool = False,
     addAalt: bool = False
 ):
@@ -524,7 +525,13 @@ def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
                 addAalt = True
     if 'file2' in dialogResult:
         secondaryFile = dialogResult['file2']
-    exportVariableFont(font, dialogResult['file'], secondaryFile, decomposeNestedRefs, addAalt)
+    exportVariableFont(
+        font,
+        dialogResult['file'],
+        secondaryFile,
+        decomposeNestedRefs=decomposeNestedRefs,
+        addAalt=addAalt
+    )
 
 
 def _saveMenuDialog(font: fontforge.font) -> dict | None:
