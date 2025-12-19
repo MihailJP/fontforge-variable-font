@@ -263,7 +263,7 @@ def _woff2Decompress(filename: str | PathLike, tmpdir: str | PathLike) -> str:
         check=True, text=True, capture_output=fontforge.hasUserInterface())
     if fontforge.hasUserInterface():
         stderr.write(result.stderr)
-    return str(Path(woffFile).stem) + '.ttf'
+    return str(Path(tmpdir, Path(woffFile).stem)) + '.ttf'
 
 
 def openVariableFont(
