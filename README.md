@@ -242,7 +242,11 @@ Custom axes must be named if used.
   elements. Leading and trailing spaces will be trimmed. Every
   group of 4 elements:
   * Axis value
-  * Whether label name is elidable (1 if so, 0 if not)
+  * Flags
+    * 0: Neither
+    * 1: ``OLDER_SIBLING_FONT_ATTRIBUTE``
+    * 2: ``ELIDABLE_AXIS_VALUE_NAME``
+    * 3: Both
   * Linked value if exist
   * Name
 
@@ -386,6 +390,7 @@ fontforgeVF.setVFValue(fontCL, "axes.ital.localNames.0x407", "Kursiv")
 fontforgeVF.setVFValue(fontCL, "axes.wght.labels.200.name", "Extra Light")
 fontforgeVF.setVFValue(fontCL, "axes.wght.labels.300.name", "Light")
 fontforgeVF.setVFValue(fontCL, "axes.wght.labels.400.name", "Regular")
+fontforgeVF.setVFValue(fontCL, "axes.wght.labels.400.olderSibling", False)
 fontforgeVF.setVFValue(fontCL, "axes.wght.labels.400.elidable", True)
 fontforgeVF.setVFValue(fontCL, "axes.wght.labels.400.linkedValue", 700)
 fontforgeVF.setVFValue(fontCL, "axes.wght.labels.500.name", "Medium")

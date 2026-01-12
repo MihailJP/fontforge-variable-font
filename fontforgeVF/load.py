@@ -123,6 +123,7 @@ def _getVFData_STAT(ttf: ttLib.TTFont, vfData: dict):
             tag = ttf['STAT'].table.DesignAxisRecord.Axis[label.AxisIndex].AxisTag
             value = label.Value
             _addNames(ttf, labelData, label.ValueNameID)
+            labelData['olderSibling'] = bool(label.Flags & 1)
             labelData['elidable'] = bool(label.Flags & 2)
             if label.Format == 3:
                 labelData['linkedValue'] = label.LinkedValue

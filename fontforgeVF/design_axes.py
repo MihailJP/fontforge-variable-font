@@ -49,6 +49,15 @@ def getAxisValue(font: fontforge.font, tag: str) -> int | float | None:
         return utils.getVFValue(font, 'axes.' + internalTag + '.value')
 
 
+def _getFlags(font: fontforge.font, labelAddr: str) -> int:
+    flag = 0
+    if utils.getVFValue(font, labelAddr + '.olderSibling', False):
+        flag += 1
+    if utils.getVFValue(font, labelAddr + '.elidable', False):
+        flag += 2
+    return flag
+
+
 def _loadLabels(tag: str, lang=None):
     font = fontforge.activeFont()
     addr = 'axes.' + tag + '.labels'
@@ -63,7 +72,7 @@ def _loadLabels(tag: str, lang=None):
                     ', '
             else:
                 text += str(k) + ',' + \
-                    ('1' if utils.getVFValue(font, labelAddr + '.elidable', False) else '0') + \
+                    str(_getFlags(font, labelAddr)) + \
                     ',' + str(utils.getVFValue(font, labelAddr + '.linkedValue', '')) + \
                     ',' + utils.getVFValue(font, labelAddr + '.name', '') + \
                     ', '
@@ -77,7 +86,7 @@ def _loadLabels(tag: str, lang=None):
             '62.5,,,Extra Condensed, ' \
             '75,,,Condensed, ' \
             '87.5,,,Semi-Condensed, ' \
-            '100,1,,Medium, ' \
+            '100,2,,Medium, ' \
             '112.5,,,Semi-Expanded, ' \
             '125,,,Expanded, ' \
             '150,,,Extra Expanded, ' \
@@ -87,7 +96,7 @@ def _loadLabels(tag: str, lang=None):
             '400,0,700,Regular, 500,,,Medium, 600,,,Semi-Bold, ' \
             '700,,,Bold, 800,,,Extra Bold, 900,,,Black'
     elif tag == 'ital':
-        return '0,1,1,Roman, 1,0,0,Italic'
+        return '0,2,1,Roman, 1,0,0,Italic'
     else:
         return ''
 
@@ -270,8 +279,10 @@ def _saveResult_labels(result, k, v):
         )):
             val = val.replace('.', ',')  # escape decimal point
             valAddr = 'axes.' + k + '.labels.' + val
+            utils.setOrDeleteVFValue(font, valAddr + '.olderSibling',
+                                     None if el == '' else bool(utils.intOrFloat(el) & 1))
             utils.setOrDeleteVFValue(font, valAddr + '.elidable',
-                                     None if el == '' else bool(utils.intOrFloat(el)))
+                                     None if el == '' else bool(utils.intOrFloat(el) & 2))
             utils.setOrDeleteVFValue(font, valAddr + '.linkedValue',
                                      None if lv == '' else utils.intOrFloat(lv))
             utils.setOrDeleteVFValue(font, valAddr + '.name',
@@ -382,7 +393,11 @@ def designAxesMenu(u, glyph):
       group of 4 elements:
 
       * Axis value
-      * Whether label name is elidable (1 if so, 0 if not)
+      * Flags
+        * 0: Neither
+        * 1: ``OLDER_SIBLING_FONT_ATTRIBUTE``
+        * 2: ``ELIDABLE_AXIS_VALUE_NAME``
+        * 3: Both
       * Linked value if exist
       * Name
 

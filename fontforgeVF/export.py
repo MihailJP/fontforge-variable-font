@@ -227,6 +227,8 @@ def _designSpaceAxes_labels(labels, a: AxisDescriptor | DiscreteAxisDescriptor):
                 a.name, str(u)))
         else:
             al = AxisLabelDescriptor(name=d['name'], userValue=u)
+            if 'olderSibling' in d:
+                al.olderSibling = d['olderSibling']
             if 'elidable' in d:
                 al.elidable = d['elidable']
             if 'linkedValue' in d:
