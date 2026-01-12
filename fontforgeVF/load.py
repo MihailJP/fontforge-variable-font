@@ -69,14 +69,14 @@ def _getVFData_fvar_axes(ttf: ttLib.TTFont, axisValues: dict[str, int | float], 
         axisData = {'active': True}
         if tag in axisValues:
             axisData['useDefault'] = False
-            axisData['value'] = axisValues[tag]
+            axisData['value'] = intOrFloat(axisValues[tag])
             if tag == 'ital':
                 axisData['value'] = bool(axisValues[tag])
         else:
             axisData['useDefault'] = True
-        axisData['minimum'] = axis.minValue
-        axisData['default'] = axis.defaultValue
-        axisData['maximum'] = axis.maxValue
+        axisData['minimum'] = intOrFloat(axis.minValue)
+        axisData['default'] = intOrFloat(axis.defaultValue)
+        axisData['maximum'] = intOrFloat(axis.maxValue)
         _addNames(ttf, axisData, axis.axisNameID)
         vfData['axes'][tag] = axisData
         vfData['axes'][tag]['labels'] = {}
@@ -96,13 +96,13 @@ def _getVFData_fvar_instances(ttf: ttLib.TTFont, vfData: dict):
 def _getVFData_avar(ttf: ttLib.TTFont, vfData: dict):
     if 'avar' in ttf:
         for axis, segments in ttf['avar'].segments.items():
-            minimum = vfData['axes'][axis]['minimum']
-            default = vfData['axes'][axis]['default']
-            maximum = vfData['axes'][axis]['maximum']
+            minimum = intOrFloat(vfData['axes'][axis]['minimum'])
+            default = intOrFloat(vfData['axes'][axis]['default'])
+            maximum = intOrFloat(vfData['axes'][axis]['maximum'])
             vfData['axes'][axis]['map'] = [
                 (
-                    _denormalize(minimum, default, maximum, k),
-                    _denormalize(minimum, default, maximum, v)
+                    intOrFloat(_denormalize(minimum, default, maximum, k)),
+                    intOrFloat(_denormalize(minimum, default, maximum, v))
                 ) for k, v in ttf['avar'].segments[axis].items()
             ]
 
@@ -121,12 +121,12 @@ def _getVFData_STAT(ttf: ttLib.TTFont, vfData: dict):
         for label in ttf['STAT'].table.AxisValueArray.AxisValue:
             labelData = {}
             tag = ttf['STAT'].table.DesignAxisRecord.Axis[label.AxisIndex].AxisTag
-            value = label.Value
+            value = intOrFloat(label.Value)
             _addNames(ttf, labelData, label.ValueNameID)
             labelData['olderSibling'] = bool(label.Flags & 1)
             labelData['elidable'] = bool(label.Flags & 2)
             if label.Format == 3:
-                labelData['linkedValue'] = label.LinkedValue
+                labelData['linkedValue'] = intOrFloat(label.LinkedValue)
             vfData['axes'][tag]['labels'][value] = labelData
 
 
