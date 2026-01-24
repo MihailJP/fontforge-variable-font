@@ -200,12 +200,12 @@ def _doOpenVariableFont(
 
     stem = (
         Path(filename).stem + '_' +
-        '_'.join([str(k) + str(v) for k, v in axisValues.items()])
+        '_'.join([str(k) + str(intOrFloat(v)) for k, v in axisValues.items()])
     )
     if i := _searchInstance(varfont, axisValues):
-        n = str(varfont['name'].getName(i.postscriptNameID, 3, 1, 0x409))
+        n = varfont['name'].getName(i.postscriptNameID, 3, 1, 0x409)
         if n:
-            stem = n
+            stem = str(n)
     instancePath = str(tmpdir) + '/' + stem + '.ttf'
     with _instantiate(filename, axisValues, instancePath) as partial:
         if i := _searchInstance(varfont, axisValues):
