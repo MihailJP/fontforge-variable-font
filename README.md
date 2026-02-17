@@ -18,7 +18,7 @@ Install
 -------
 
 ```shell
-pip3 install fontforgeVF
+pip3 install fontforge-variable-font
 ```
 
 ### Make sure Fontforge Python module is usable
