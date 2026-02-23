@@ -447,6 +447,7 @@ def exportVariableFont(
     italicFilename: str | PathLike | None = None,
     *,
     decomposeNestedRefs: bool = False,
+    decomposeTransformedRefs: bool = False,
     addAalt: bool = False
 ):
     """Exports variable font
@@ -485,6 +486,9 @@ def exportVariableFont(
     :param decomposeNestedRefs: Optional. Nested references are known to \
     cause problems in certain environments; if ``True``, resulting font \
     will decompose such references. Defaults to ``False``.
+    :param decomposeTransformedRefs: Optional. Transformed references must \
+    be decomposed before ttfautohint can be applied; if ``True``, resulting \
+    font will decompose such references. Defaults to ``False``.
     :param addAalt: Adds 'aalt' feature. Defaults to ``False``.
     :raises ``ValueError``: ``filename`` or ``italicFilename`` ends with \
     unexpected extension.
@@ -512,17 +516,23 @@ def exportVariableFont(
         options = []
         if decomposeNestedRefs:
             options.append('-f')
+        if decomposeTransformedRefs:
+            options.append('--filter')
+            options.append('DecomposeTransformedComponentsFilter')
         _exportVF(font, tmpdir, filename, italicFilename, options, need2files)
 
 
 def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
     decomposeNestedRefs = False
+    decomposeTransformedRefs = False
     addAalt = False
     secondaryFile = None
     if 'options' in dialogResult:
         for opt in dialogResult['options']:
             if opt == 'nestedRefs':
                 decomposeNestedRefs = True
+            if opt == 'transformedRefs':
+                decomposeTransformedRefs = True
             if opt == 'aalt':
                 addAalt = True
     if 'file2' in dialogResult:
@@ -532,6 +542,7 @@ def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
         dialogResult['file'],
         secondaryFile,
         decomposeNestedRefs=decomposeNestedRefs,
+        decomposeTransformedRefs=decomposeTransformedRefs,
         addAalt=addAalt
     )
 
@@ -540,14 +551,14 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
     if _hasBothRomanAndItalic(font):
         questions = [
             {
-                'type': 'savepath', 'question': 'Roman VF:', 'tag': 'file',
+                'type': 'savepath', 'question': '_Roman VF:', 'tag': 'file',
                 'default':
                     font.default_base_filename + '.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '.ttf',
                 'filter': '*.{ttf,woff2}',
             },
             {
-                'type': 'savepath', 'question': 'Italic VF:', 'tag': 'file2',
+                'type': 'savepath', 'question': '_Italic VF:', 'tag': 'file2',
                 'default':
                     font.default_base_filename + '-Italic.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '-Italic.ttf',
@@ -557,7 +568,7 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
     else:
         questions = [
             {
-                'type': 'savepath', 'question': 'Save as:', 'tag': 'file',
+                'type': 'savepath', 'question': '_Save as:', 'tag': 'file',
                 'default':
                     font.default_base_filename + '.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '.ttf',
@@ -569,8 +580,9 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
             'type': 'choice', 'question': 'Options:', 'tag': 'options',
             'checks': True, 'multiple': True,
             'answers': [
-                {'name': 'Remove nested refs', 'tag': 'nestedRefs'},
-                {'name': "Add 'aalt' feature", 'tag': 'aalt'},
+                {'name': 'Decompose _nested refs', 'tag': 'nestedRefs'},
+                {'name': 'Decompose _transformed refs', 'tag': 'transformedRefs'},
+                {'name': "Add '_aalt' feature", 'tag': 'aalt'},
             ],
         },
     ]
