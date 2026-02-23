@@ -157,19 +157,19 @@ For active font as one of VF masters, sets position in each design
 axis of VF master. Leave unset for unused axes. Registered axes can
 use default values which refers font properties.
 
-* Italic: default value is whether ``font.italicangle`` is negative.
+- Italic: default value is whether ``font.italicangle`` is negative.
   This axis is boolean: you choose the master is for italic or not.
   Seldom used together with slant axis.
-* Optical size: can default to ``font.design_size``. Set in points.
+- Optical size: can default to ``font.design_size``. Set in points.
   Must be positive.
-* Slant: can default to ``font.italicangle``. 0 if upright, negative
+- Slant: can default to ``font.italicangle``. 0 if upright, negative
   if oblique. This value is hardly positive (left-slanted.)
-* Width: can default using ``font.os2_width``. 100 if normal width,
+- Width: can default using ``font.os2_width``. 100 if normal width,
   less if condensed, greater if expanded. Must be positive.
-* Weight: can default to ``font.os2_weight``. 400 if regular weight,
+- Weight: can default to ``font.os2_weight``. 400 if regular weight,
   700 if bold. The minimum is 1 (hairline thin) and the maximum is
   999 (extreme bold.)
-* Custom axes: there is a room for 3 user-defined axes. No default
+- Custom axes: there is a room for 3 user-defined axes. No default
   values.
 
 > [!TIP]
@@ -237,18 +237,18 @@ default.)
 Names the design axes. For predefined axes can use default name.
 Custom axes must be named if used.
 
-* Axis name: name of axis itself.
-* Labels: comma-separated list which consists of multiple of 4 of
+- Axis name: name of axis itself.
+- Labels: comma-separated list which consists of multiple of 4 of
   elements. Leading and trailing spaces will be trimmed. Every
   group of 4 elements:
-  * Axis value
-  * Flags
-    * 0: Neither
-    * 1: ``OLDER_SIBLING_FONT_ATTRIBUTE``
-    * 2: ``ELIDABLE_AXIS_VALUE_NAME``
-    * 3: Both
-  * Linked value if exist
-  * Name
+  - Axis value
+  - Flags
+    - 0: Neither
+    - 1: ``OLDER_SIBLING_FONT_ATTRIBUTE``
+    - 2: ``ELIDABLE_AXIS_VALUE_NAME``
+    - 3: Both
+  - Linked value if exist
+  - Name
 
 ##### Localized names
 
@@ -261,12 +261,12 @@ Set language code before you use. Choose a language from the list.
 By default there is a room for 8 languages, but this will be
 extended if already more than 4 languages are defined.
 
-* Axis name: name of axis itself.
-* Labels: comma-separated list which consists of even number of
+- Axis name: name of axis itself.
+- Labels: comma-separated list which consists of even number of
   elements. Leading and trailing spaces will be trimmed. Every
   pair of elements:
-  * Axis value
-  * Name
+  - Axis value
+  - Name
 
 > [!CAUTION]
 > Do not select the same language more than once, or undefined behavior will
@@ -424,6 +424,11 @@ fontforgeVF.setVFValue(fontCL, "instances[0].localNames.0x407", "Extramager")
 
 # Export TTF
 fontforgeVF.export(fontCL, 'MyFont.ttf')
+fontforgeVF.export(fontCL, 'MyFont.ttf', 'MyFont-Italic.ttf')  # if ``ital`` axis enabled
+fontforgeVF.export(fontCL, 'MyFont.ttf',
+                   decomposeNestedRefs=True,
+                   decomposeTransformedRefs=True,
+                   addAalt=True)  # these options default to False
 
 # Export Webfont
 fontforgeVF.export(fontCL, 'MyFont.woff2')
