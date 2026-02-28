@@ -11,7 +11,7 @@ import fontforge
 def fontforge_plugin_init(**kw):
     fontforge.registerMenuItem(
         callback=load.loadMenu,
-        enable=load.loadEnable,
+        enable=None,
         context="Font",
         submenu=["_Variable Font", '_Open a variable font'],
         name="By named _instance...",
@@ -19,7 +19,7 @@ def fontforge_plugin_init(**kw):
     )
     fontforge.registerMenuItem(
         callback=load.loadMenu,
-        enable=load.loadEnable,
+        enable=None,
         context="Font",
         submenu=["_Variable Font", '_Open a variable font'],
         name="By _parameter...",
@@ -34,14 +34,14 @@ def fontforge_plugin_init(**kw):
     )
     fontforge.registerMenuItem(
         callback=design_axes.designAxesMenu,
-        enable=design_axes.designAxesEnable,
+        enable=None,
         context="Font",
         submenu="_Variable Font",
         name="Design _axes..."
     )
     fontforge.registerMenuItem(
         callback=instance.instanceMenu,
-        enable=instance.instanceEnable,
+        enable=None,
         context="Font",
         submenu="_Variable Font",
         name="Named _instances..."

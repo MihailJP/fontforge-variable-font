@@ -424,7 +424,3 @@ def designAxesMenu(u, glyph):
     result = fontforge.askMulti("Design axes", _prepareQuestions())
     if result:
         _saveResult(result)
-
-
-def designAxesEnable(u, glyph):
-    return True

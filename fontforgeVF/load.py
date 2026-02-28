@@ -367,7 +367,3 @@ def loadMenu(u, glyph):
                 fontforge.logWarning(filename + " has 'fvar' table but all axes are fixed")
                 fontforge.open(filename)
     faulthandler.disable()
-
-
-def loadEnable(u, glyph):
-    return True

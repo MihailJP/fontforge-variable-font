@@ -169,7 +169,3 @@ def instanceMenu(u, glyph):
     result = fontforge.askMulti("Named instances", _prepareQuestions())
     if result:
         _saveInstances(result)
-
-
-def instanceEnable(u, glyph):
-    return True
