@@ -6,6 +6,24 @@ from fontforgeVF import (
     load
 )
 import fontforge
+from typing import Literal, Callable
+
+
+def _addHook(
+    name: Literal['newFontHook', 'loadFontHook'],
+    hook: Callable[[fontforge.font], None]
+):
+    assert isinstance(fontforge.hooks, dict)
+    if name in fontforge.hooks:
+        currentHook = fontforge.hooks[name]
+
+        def chainHook(font: fontforge.font):
+            currentHook(font)
+            hook(font)
+
+        fontforge.hooks[name] = chainHook
+    else:
+        fontforge.hooks[name] = hook
 
 
 def fontforge_plugin_init(**kw):
@@ -55,13 +73,5 @@ def fontforge_plugin_init(**kw):
     )
 
     if fontforge.hasUserInterface:
-        if "loadFontHook" in fontforge.hooks:
-            currentHook = fontforge.hooks["loadFontHook"]
-
-            def hook(font: fontforge.font):
-                currentHook(font)
-                load.loadHook(font)
-
-            fontforge.hooks["loadFontHook"] = hook
-        else:
-            fontforge.hooks["loadFontHook"] = load.loadHook
+        _addHook('loadFontHook', load.loadHook)
+        _addHook('newFontHook', load.newFontHook)

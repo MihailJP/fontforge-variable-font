@@ -3,6 +3,7 @@ from fontforgeVF.utils import intOrFloat, checkExtensionTtfOrWoff2
 from os import PathLike
 from fontTools import ttLib
 import faulthandler
+from typing import Literal, Callable
 
 
 __all__ = [
@@ -369,29 +370,96 @@ def loadMenu(u, glyph):
     faulthandler.disable()
 
 
-def loadHook(font: fontforge.font):
+def _generatePreHook(font: fontforge.font, target: str):
+    from fontforgeVF.utils import vfInfoExists
+
+    changed = font.changed
+    if vfInfoExists(font):
+        if target.endswith('.ttf') or target.endswith('.woff2'):
+            ans = fontforge.ask(
+                "Variable font",
+                "This font has variable font metadata in its persistent dict.\n"
+                "Did you intend to output a variable font?\n"
+                "(all masters need to be opened beforehand)",
+                ["_Yes", "_No"],
+            )
+            font.temporary['generateVF'] = (ans == 0)
+            font.changed = changed
+
+
+def _generatePostHook(font: fontforge.font, target: str):
+    from fontforgeVF.utils import vfInfoExists
+    from fontforgeVF.export import exportVariableFont
+
+    changed = font.changed
+    if vfInfoExists(font):
+        if 'generateVF' in font.temporary:
+            if target.endswith('.ttf') or target.endswith('.woff2'):
+                if font.temporary['generateVF']:
+                    exportVariableFont(font, target, None)
+            del font.temporary['generateVF']
+            font.changed = changed
+
+
+def _addHook(
+    font: fontforge.font,
+    name: Literal['generateFontPreHook', 'generateFontPostHook'],
+    hook: Callable[[fontforge.font, str], None]
+):
+    assert isinstance(font.temporary, dict)
+    if name in font.temporary:
+        currentHook = font.temporary[name]
+
+        def chainHook(font: fontforge.font, target: str):
+            currentHook(font, target)
+            hook(font, target)
+
+        font.temporary[name] = chainHook
+    else:
+        font.temporary[name] = hook
+
+
+def _addGenerateHook(font: fontforge.font):
+    if not isinstance(font.temporary, dict):
+        font.temporary = {}
+    _addHook(font, 'generateFontPreHook', _generatePreHook)
+    _addHook(font, 'generateFontPostHook', _generatePostHook)
+
+
+def _loadHook_ttf(font: fontforge.font):
     from fontforgeVF.utils import initPersistentDict
 
+    with ttLib.TTFont(font.path) as ttf:
+        if 'fvar' in ttf and [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
+            if ttf['fvar'].instances:
+                ans = fontforge.ask(
+                    "Variable font",
+                    "The font '" + font.familyname + "' in \n"
+                    "'" + font.path + "'\n"
+                    "seems to be a variable font.\n"
+                    "Would you like to open another instance of this font?",
+                    [
+                        "_Yes",
+                        "Open with _parameters",
+                        "_No",
+                    ]
+                )
+                if ans == 0 or ans == 1:
+                    _selectInstanceDialog(font.path, ttf, ans)
+            else:
+                _selectInstanceDialog(font.path, ttf, 1)
+            initPersistentDict(font)
+            vfData = _getVFData(ttf, {})
+            font.persistent['VF'] = vfData
+
+
+def loadHook(font: fontforge.font):
     if font.path.endswith('.ttf') or font.path.endswith('.woff2'):
-        with ttLib.TTFont(font.path) as ttf:
-            if 'fvar' in ttf and [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
-                if ttf['fvar'].instances:
-                    ans = fontforge.ask(
-                        "Variable font",
-                        "The font '" + font.familyname + "' in \n"
-                        "'" + font.path + "'\n"
-                        " seems to be a variable font.\n"
-                        "Would you like to open another instance of this font?",
-                        [
-                            "_Yes",
-                            "Open with _parameters",
-                            "_No",
-                        ]
-                    )
-                    if ans == 0 or ans == 1:
-                        _selectInstanceDialog(font.path, ttf, ans)
-                else:
-                    _selectInstanceDialog(font.path, ttf, 1)
-                initPersistentDict(font)
-                vfData = _getVFData(ttf, {})
-                font.persistent['VF'] = vfData
+        _loadHook_ttf(font)
+        _addGenerateHook(font)
+    elif font.path.endswith('.sfd'):
+        _addGenerateHook(font)
+
+
+def newFontHook(font: fontforge.font):
+    _addGenerateHook(font)
