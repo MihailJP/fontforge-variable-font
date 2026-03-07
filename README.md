@@ -313,6 +313,25 @@ Deletes VF data.
 > [!WARNING]
 > You will see **no** warning.
 
+### Hooks
+
+This plugin installs new/open font hooks which does:
+
+- sets font generation hooks to output VF if metadata exists
+  - If you export a TTF or a WOFF2 when VF metadata exists, you will be
+    asked if you intend a VF. In this case too, all the masters must be
+    opened beforehands, however unlike the dedicated menu, VF-specific
+    options or italic counterpart cannot be set.
+  - For technical reason, first the static font gets exported as usual,
+    then VF overwrites it. Failed attempt of exporting a VF leaves the
+    static font.
+- loads VF-specific metadata if available
+  - If you load a variable font from the ordinary 'load' menu, you will be
+    asked if you will open additional instances and which one(s.)
+
+> [!NOTE]
+> These hooks work in interactive mode only.
+
 ### Script usage
 
 As a Python module, in addition to `fontforge` module, scripting to export
