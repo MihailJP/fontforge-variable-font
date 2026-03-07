@@ -394,7 +394,10 @@ def _generatePostHook(font: fontforge.font, target: str):
             if target.endswith('.ttf') or target.endswith('.woff2'):
                 if font.temporary['generateVF']:
                     exportVariableFont(font, target, None)
-            del font.temporary['generateVF']
+            try:
+                del font.temporary['generateVF']
+            except KeyError:
+                pass
             font.changed = changed
 
 

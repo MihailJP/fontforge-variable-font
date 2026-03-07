@@ -417,10 +417,13 @@ def _exportVF(
             _doExportVF(font, tmpdir, italicFilename, tmpdir + '/vf2.designspace', options)
     except CalledProcessError as e:
         if fontforge.hasUserInterface():
+            cmd = e.cmd
+            if isinstance(cmd, str):
+                cmd = e.cmd.split(' ')
             fontforge.logWarning(e.stderr)
             fontforge.postError(
                 "Failed to export",
-                "'{0}' failed with return code {1}".format(e.cmd.split(' ')[0], e.returncode)
+                "'{0}' failed with return code {1}".format(cmd[0], e.returncode)
             )
         else:
             raise
