@@ -43,10 +43,7 @@ def _loadInstanceNames(varfont: ttLib.TTFont, partial: ttLib.TTFont, postscriptN
 def _addNames(ttf: ttLib.TTFont, data: dict, nameID: int):
     data['name'] = ''
     data['localNames'] = {}
-    for name in filter(
-        lambda x: x.nameID == nameID and x.platformID == 3 and x.platEncID == 1,
-        ttf['name'].names
-    ):
+    for name in (n for n in ttf['name'].names if n.nameID == nameID and n.platformID == 3 and n.platEncID == 1):
         if name.langID == 0x409:
             data['name'] = str(name)
         else:
@@ -134,7 +131,7 @@ def _getVFData_STAT(ttf: ttLib.TTFont, vfData: dict):
 def _getVFData_customTags(ttf: ttLib.TTFont, vfData: dict):
     from fontforgeVF.design_axes import designAxes
 
-    customAxes = list(filter(lambda x: x not in designAxes.keys(), vfData['axes'].keys()))
+    customAxes = [axis for axis in vfData['axes'].keys() if axis not in designAxes.keys()]
     for i, a in enumerate(customAxes):
         if i < 3:
             vfData['axes']['custom' + str(i + 1)] = vfData['axes'][a]
@@ -187,7 +184,7 @@ def _doOpenVariableFont(
     from fontforgeVF.utils import initPersistentDict
     from pathlib import Path
 
-    axes = [a.axisTag for a in filter(lambda x: x.minValue < x.maxValue, varfont["fvar"].axes)]
+    axes = [a.axisTag for a in varfont["fvar"].axes if a.minValue < a.maxValue]
     if extra := set(axisValues.keys()) - set(axes):  # extra axes set
         fontforge.logWarning(', '.join(["'" + a + "'" for a in list(extra)]) + ' ignored')
         for tag in list(extra):
@@ -195,7 +192,7 @@ def _doOpenVariableFont(
     if unset := set(axes) - set(axisValues.keys()):  # unset axes
         fontforge.logWarning(', '.join(["'" + a + "'" for a in list(unset)]) + ' not set (default value used)')
         for tag in list(unset):
-            axisValues[tag] = [a.defaultValue for a in filter(lambda x: x.axisTag == tag, varfont["fvar"].axes)][0]
+            axisValues[tag] = [a.defaultValue for a in varfont["fvar"].axes if a.axisTag == tag][0]
     _checkAxisValue(varfont, axisValues)  # out of range
     vfData = _getVFData(varfont, axisValues)
 
@@ -227,7 +224,7 @@ def _openVF(
         if 'fvar' not in ttf:
             return fontforge.open(filename)
         elif isinstance(axisValuesOrInstance, dict):
-            if list(filter(lambda x: x.minValue != x.maxValue, ttf['fvar'].axes)):
+            if [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
                 return _doOpenVariableFont(filename, axisValuesOrInstance, ttf, tmpdir)
             else:
                 return fontforge.open(filename)
@@ -241,10 +238,10 @@ def _openVF(
         elif isinstance(axisValuesOrInstance, str):
             return _doOpenVariableFont(
                 filename,
-                list(filter(
-                    lambda x: str(ttf['name'].getName(x.subfamilyNameID, 3, 1, 0x409)) == axisValuesOrInstance,
-                    ttf['fvar'].instances
-                ))[0].coordinates,
+                [
+                    i for i in ttf['fvar'].instances
+                    if str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) == axisValuesOrInstance
+                ][0].coordinates,
                 ttf,
                 tmpdir
             )
@@ -329,7 +326,7 @@ def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: s
         [str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances],
         multiple=True
     )
-    for i in [i[1] for i in list(filter(lambda x: x[0], zip(result, ttf['fvar'].instances)))]:
+    for i in (x[1] for x in zip(result, ttf['fvar'].instances) if x[0]):
         _doOpenVariableFont(filename, i.coordinates, ttf, tmpdir)
 
 

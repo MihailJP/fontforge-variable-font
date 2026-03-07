@@ -129,7 +129,7 @@ def _saveInstances(result: dict):
                 else:
                     instance[k] = utils.intOrFloat(result[k + '_' + str(cnt)])
             instance['localNames'] = {}
-            for lang in filter(lambda x: x.startswith('lang') and x.find('name') == -1, result.keys()):
+            for lang in (x for x in result.keys() if x.startswith('lang') and x.find('name') == -1):
                 if result[lang] and result[lang + 'name' + str(cnt)]:
                     instance['localNames'][utils.intOrFloat(result[lang])] = result[lang + 'name' + str(cnt)]
             instanceList.append(instance)

@@ -288,7 +288,7 @@ def _saveResult_labels(result, k, v):
             utils.setOrDeleteVFValue(font, valAddr + '.name',
                                      None if name == '' else name)
             utils.deleteVFValue(font, 'axes.' + k + '.labels.' + val + '.localNames')
-    for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
+    for i in (x.replace('lang', '') for x in result if x.startswith('lang')):
         if result['lang' + i] and result[k + 'labels' + i]:
             for val, name in list(zip(_x := iter(result[k + 'labels' + i].split(',')), _x)):
                 val = val.replace('.', ',')  # escape decimal point
@@ -301,7 +301,7 @@ def _saveResult_localNames(result, k, v):
     font = fontforge.activeFont()
     utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
     utils.deleteVFValue(font, 'axes.' + k + '.localNames')
-    for i in list(map(lambda x: x.replace('lang', ''), filter(lambda x: x.startswith('lang'), result))):
+    for i in (x.replace('lang', '') for x in result if x.startswith('lang')):
         if result['lang' + i]:
             utils.setOrDeleteVFValue(
                 font, 'axes.' + k + '.localNames.' + result['lang' + i],

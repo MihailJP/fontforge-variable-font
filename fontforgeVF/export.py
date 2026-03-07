@@ -20,33 +20,29 @@ __all__ = [
 
 
 def _getSourceFonts(defaultFont: fontforge.font, filterItalicRoman: bool | None = None) -> list[fontforge.font]:
-    tmpIter = filter(lambda f: f.familyname == defaultFont.familyname, fontforge.fonts())
+    tmpIter = (font for font in fontforge.fonts() if font.familyname == defaultFont.familyname)
     if filterItalicRoman is None:
         return list(tmpIter)
     else:
-        return list(filter(lambda f: getAxisValue(f, 'ital') == filterItalicRoman, tmpIter))
+        return [font for font in tmpIter if getAxisValue(font, 'ital') == filterItalicRoman]
 
 
 def _axisMinValue(defaultFont: fontforge.font, tag: str, filterItalicRoman: bool | None = None) -> int | float:
     return min(
-        filter(
-            lambda x: x is not None,
-            map(
-                lambda f: getAxisValue(f, tag),
-                _getSourceFonts(defaultFont, filterItalicRoman)
-            )
+        (
+            getAxisValue(f, tag) for f
+            in _getSourceFonts(defaultFont, filterItalicRoman)
+            if getAxisValue(f, tag) is not None
         )
     )
 
 
 def _axisMaxValue(defaultFont: fontforge.font, tag: str, filterItalicRoman: bool | None = None) -> int | float:
     return max(
-        filter(
-            lambda x: x is not None,
-            map(
-                lambda f: getAxisValue(f, tag),
-                _getSourceFonts(defaultFont, filterItalicRoman)
-            )
+        (
+            getAxisValue(f, tag) for f
+            in _getSourceFonts(defaultFont, filterItalicRoman)
+            if getAxisValue(f, tag) is not None
         )
     )
 
@@ -86,12 +82,7 @@ def _getFontSubFamilyName(font: fontforge.font, lang: str = 'English (US)') -> s
 def _isFixedPitch(font: fontforge.font) -> bool:
     return len(
         set(
-            map(
-                lambda x: x.width,
-                filter(
-                    lambda x: 0x20 <= x.unicode <= 0x7e, font.glyphs()
-                )
-            )
+            (glyph.width for glyph in font.glyphs() if 0x20 <= glyph.unicode <= 0x7e)
         )
     ) == 1
 
@@ -336,7 +327,7 @@ def _fixTtf_axes(font: fontforge.font, ttf: ttLib.TTFont):
         if utils.getVFValue(font, 'axes.' + k + '.active', False):
             localNames = utils.getVFValue(font, 'axes.' + k + '.localNames', {})
             for lang, name in localNames.items():
-                axis = list(filter(lambda x: x.axisTag == tag, ttf["fvar"].axes))
+                axis = [a for a in ttf["fvar"].axes if a.axisTag == tag]
                 if axis:
                     ttf['name'].setName(name, axis[0].axisNameID, 3, 1, lang)
 
