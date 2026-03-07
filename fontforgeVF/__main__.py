@@ -53,3 +53,15 @@ def fontforge_plugin_init(**kw):
         submenu="_Variable Font",
         name="_Delete VF info"
     )
+
+    if fontforge.hasUserInterface:
+        if "loadFontHook" in fontforge.hooks:
+            currentHook = fontforge.hooks["loadFontHook"]
+
+            def hook(font: fontforge.font):
+                currentHook(font)
+                load.loadHook(font)
+
+            fontforge.hooks["loadFontHook"] = hook
+        else:
+            fontforge.hooks["loadFontHook"] = load.loadHook

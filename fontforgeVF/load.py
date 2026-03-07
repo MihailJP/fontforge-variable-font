@@ -361,9 +361,37 @@ def loadMenu(u, glyph):
             if 'fvar' not in ttf:
                 fontforge.logWarning(filename + " does not have 'fvar' table")
                 fontforge.open(filename)
-            elif list(filter(lambda x: x.minValue != x.maxValue, ttf['fvar'].axes)):
+            elif [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
                 _selectInstanceDialog(filename, ttf, u)
             else:
                 fontforge.logWarning(filename + " has 'fvar' table but all axes are fixed")
                 fontforge.open(filename)
     faulthandler.disable()
+
+
+def loadHook(font: fontforge.font):
+    from fontforgeVF.utils import initPersistentDict
+
+    if font.path.endswith('.ttf') or font.path.endswith('.woff2'):
+        with ttLib.TTFont(font.path) as ttf:
+            if 'fvar' in ttf and [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
+                if ttf['fvar'].instances:
+                    ans = fontforge.ask(
+                        "Variable font",
+                        "The font '" + font.familyname + "' in \n"
+                        "'" + font.path + "'\n"
+                        " seems to be a variable font.\n"
+                        "Would you like to open another instance of this font?",
+                        [
+                            "_Yes",
+                            "Open with _parameters",
+                            "_No",
+                        ]
+                    )
+                    if ans == 0 or ans == 1:
+                        _selectInstanceDialog(font.path, ttf, ans)
+                else:
+                    _selectInstanceDialog(font.path, ttf, 1)
+                initPersistentDict(font)
+                vfData = _getVFData(ttf, {})
+                font.persistent['VF'] = vfData
