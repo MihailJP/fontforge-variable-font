@@ -1,14 +1,11 @@
-import fontforge
-from fontforgeVF.utils import intOrFloat, checkExtensionTtfOrWoff2
-from os import PathLike
-from fontTools import ttLib
 import faulthandler
+from os import PathLike
 from typing import Literal, Callable
 
+import fontforge
+from fontTools import ttLib
 
-__all__ = [
-    "openVariableFont",
-]
+from .utils import intOrFloat, checkExtensionTtfOrWoff2
 
 
 def _checkAxisValue(ttf: ttLib.TTFont, axisValues: dict[str, int | float]):

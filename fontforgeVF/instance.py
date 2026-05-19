@@ -1,6 +1,7 @@
 import fontforge
-from fontforgeVF import utils
-from fontforgeVF.design_axes import designAxes
+
+from . import utils
+from .design_axes import designAxes
 
 
 def _instances_getval(font: fontforge.font, cnt: int, key: str, defaultVal):

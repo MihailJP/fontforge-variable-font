@@ -1,5 +1,5 @@
-import pytest
 import fontforge
+import pytest
 
 
 def axisTestFont(useDefault):

@@ -1,10 +1,6 @@
-from fontforgeVF import utils
 import fontforge
 
-
-__all__ = [
-    "deleteVFInfo",
-]
+from . import utils
 
 
 def deleteVFInfo(font: fontforge.font) -> bool:

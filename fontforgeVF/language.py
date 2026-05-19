@@ -1,10 +1,3 @@
-__all__ = [
-    'languageCodeIterator',
-    'languageCodeLookup',
-    'languageCodeReverseLookup',
-    'getLanguageList',
-]
-
 languageData = {
     1: {
         'name': 'Arabic',

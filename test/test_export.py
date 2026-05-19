@@ -1,5 +1,6 @@
-import pytest
 import fontforge
+import pytest
+
 from fontforgeVF.utils import setVFValue
 
 

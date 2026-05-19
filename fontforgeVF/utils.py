@@ -1,19 +1,7 @@
-import fontforge
-import re
 from os import PathLike
+import re
 
-
-__all__ = [
-    "intOrFloat",
-    "initPersistentDict",
-    "vfInfoExists",
-    "getVFValue",
-    "setVFValue",
-    "deleteEmptyDicts",
-    "deleteVFValue",
-    "setOrDeleteVFValue",
-    "checkExtensionTtfOrWoff2",
-]
+import fontforge
 
 
 def intOrFloat(val):

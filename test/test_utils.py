@@ -1,5 +1,5 @@
-import pytest
 import fontforge
+import pytest
 
 
 @pytest.mark.parametrize(('param', 'expectedVal', 'expectedType'), [

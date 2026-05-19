@@ -1,8 +1,8 @@
-from fontforgeVF import utils, language
-from fontforgeVF.design_axes import designAxes, getAxisValue
-import fontforge
-import tempfile
 from os import PathLike
+import tempfile
+
+import fontforge
+from fontTools import ttLib
 from fontTools.designspaceLib import (
     DesignSpaceDocument,
     SourceDescriptor,
@@ -11,12 +11,9 @@ from fontTools.designspaceLib import (
     AxisLabelDescriptor,
     InstanceDescriptor,
 )
-from fontTools import ttLib
 
-
-__all__ = [
-    "exportVariableFont",
-]
+from . import utils, language
+from .design_axes import designAxes, getAxisValue
 
 
 def _getSourceFonts(defaultFont: fontforge.font, filterItalicRoman: bool | None = None) -> list[fontforge.font]:
