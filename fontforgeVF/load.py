@@ -1,11 +1,11 @@
 import faulthandler
 from os import PathLike
-from typing import Literal, Callable
 
 import fontforge
 from fontTools import ttLib
 
 from .utils import intOrFloat, checkExtensionTtfOrWoff2
+from fontforge_plugin_helper import addFontGenerateHook
 
 
 def _checkAxisValue(ttf: ttLib.TTFont, axisValues: dict[str, int | float]):
@@ -398,29 +398,11 @@ def _generatePostHook(font: fontforge.font, target: str):
             font.changed = changed
 
 
-def _addHook(
-    font: fontforge.font,
-    name: Literal['generateFontPreHook', 'generateFontPostHook'],
-    hook: Callable[[fontforge.font, str], None]
-):
-    assert isinstance(font.temporary, dict)
-    if name in font.temporary:
-        currentHook = font.temporary[name]
-
-        def chainHook(font: fontforge.font, target: str):
-            currentHook(font, target)
-            hook(font, target)
-
-        font.temporary[name] = chainHook
-    else:
-        font.temporary[name] = hook
-
-
 def _addGenerateHook(font: fontforge.font):
     if not isinstance(font.temporary, dict):
         font.temporary = {}
-    _addHook(font, 'generateFontPreHook', _generatePreHook)
-    _addHook(font, 'generateFontPostHook', _generatePostHook)
+    addFontGenerateHook(font, 'generateFontPreHook', _generatePreHook)
+    addFontGenerateHook(font, 'generateFontPostHook', _generatePostHook)
 
 
 def _loadHook_ttf(font: fontforge.font):

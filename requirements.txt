@@ -1,1 +1,2 @@
 fonttools
+fontforge_plugin_helper
