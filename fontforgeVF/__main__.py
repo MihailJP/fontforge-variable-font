@@ -34,6 +34,13 @@ def fontforge_plugin_init(**kw):
         submenu="_Variable Font",
         name="_Generate a variable font..."
     )
+
+    fontforge.registerMenuItem(
+        divider=True,
+        context="Font",
+        submenu="_Variable Font",
+    )
+
     fontforge.registerMenuItem(
         callback=design_axes.designAxesMenu,
         enable=None,
