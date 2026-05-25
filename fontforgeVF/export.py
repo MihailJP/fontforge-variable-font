@@ -195,12 +195,14 @@ def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument, filterIt
         for k, v in designAxes.items():
             active = 'axes.' + k + '.active'
             if utils.getVFValue(font, active, False) and utils.getVFValue(f, active, False):
-                tag = utils.getVFValue(font, 'axes.' + k + '.tag', '????') \
+                tag = str(
+                    utils.getVFValue(font, 'axes.' + k + '.tag', '????')
                     if k.startswith('custom') else k
-                name = utils.getVFValue(font, 'axes.' + k + '.name', v['name']) \
+                )
+                name = str(
+                    utils.getVFValue(font, 'axes.' + k + '.name', v['name'])
                     if k.startswith('custom') else v['name']
-                assert isinstance(tag, str)
-                assert isinstance(name, str)
+                )
                 s.location[name] = getAxisValue(f, tag)  # type: ignore
         s.familyName = _getFontFamilyName(f)
         s.styleName = _getFontSubFamilyName(f)
@@ -232,9 +234,10 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument, filterItali
     for k, v in designAxes.items():
         if utils.getVFValue(font, 'axes.' + k + '.active', False):
             a = DiscreteAxisDescriptor() if k == 'ital' else AxisDescriptor()
-            a.tag = utils.getVFValue(font, 'axes.' + k + '.tag', '????') \
+            a.tag = str(
+                utils.getVFValue(font, 'axes.' + k + '.tag', '????')
                 if k.startswith('custom') else k
-            assert isinstance(a.tag, str)
+            )
             if k == 'ital' and filterItalicRoman is not None:
                 a.minimum = 1 if filterItalicRoman else _axisMinValue(font, a.tag)  # type: ignore
                 a.maximum = 0 if not filterItalicRoman else _axisMaxValue(font, a.tag)  # type: ignore
@@ -253,8 +256,7 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument, filterItali
 
 
 def _designSpaceInstances(font: fontforge.font, doc: DesignSpaceDocument, filterItalicRoman: bool | None = None):
-    instances = utils.getVFValue(font, 'instances', [])
-    assert isinstance(instances, list)
+    instances = utils.getVFValueAsList(font, 'instances')
     for instance in instances:
         i = InstanceDescriptor()
         i.styleName = instance['name']
@@ -328,8 +330,7 @@ def _fixTtf_axes(font: fontforge.font, ttf: ttLib.TTFont):
             if k.startswith('custom') else k
         )
         if utils.getVFValue(font, 'axes.' + k + '.active', False):
-            localNames = utils.getVFValue(font, 'axes.' + k + '.localNames', {})
-            assert isinstance(localNames, dict)
+            localNames = utils.getVFValueAsDict(font, 'axes.' + k + '.localNames')
             for lang, name in localNames.items():
                 axis = [a for a in ttf["fvar"].axes if a.axisTag == tag]
                 if axis:
@@ -341,14 +342,13 @@ def _fixTtf_labels(font: fontforge.font, ttf: ttLib.TTFont):
         axisIndex = axisLabel.AxisIndex
         tag = ttf['STAT'].table.DesignAxisRecord.Axis[axisIndex].AxisTag
         value = axisLabel.Value
-        localNames = utils.getVFValue(
+        localNames = utils.getVFValueAsDict(
             font, 'axes.' + tag + '.labels.' + str(int(value)) + '.localNames',
-            utils.getVFValue(
+            utils.getVFValueAsDict(
                 font, 'axes.' + tag + '.labels.' + str(float(value)).replace('.', ',') + '.localNames',
                 {}
             )
         )
-        assert isinstance(localNames, dict)
         for lang, name in localNames.items():
             ttf['name'].setName(name, axisLabel.ValueNameID, 3, 1, lang)
 
@@ -356,10 +356,9 @@ def _fixTtf_labels(font: fontforge.font, ttf: ttLib.TTFont):
 def _fixTtf_instances(font: fontforge.font, ttf: ttLib.TTFont):
     for i, instance in enumerate(ttf['fvar'].instances):
         subfamilyNameID = instance.subfamilyNameID
-        localNames = utils.getVFValue(
+        localNames = utils.getVFValueAsDict(
             font, 'instances[' + str(i) + '].localNames', {}
         )
-        assert isinstance(localNames, dict)
         for lang, name in localNames.items():
             ttf['name'].setName(name, subfamilyNameID, 3, 1, lang)
 
@@ -368,9 +367,12 @@ def _fixTtf(font: fontforge.font, filename: str | PathLike):
     with ttLib.TTFont(str(filename)) as ttf:
         for i in font.sfnt_names:
             if i[0] != 'English (US)':
-                assert isinstance(i[0], str)
+                if isinstance(i[0], str):  # likely
+                    langCode = language.languageCodeReverseLookup(i[0])
+                else:  # unlikely
+                    langCode = i[0]
                 if i[1] in _fields:
-                    ttf['name'].setName(i[2], _fields[i[1]], 3, 1, language.languageCodeReverseLookup(i[0]))
+                    ttf['name'].setName(i[2], _fields[i[1]], 3, 1, langCode)
         _fixTtf_axes(font, ttf)
         _fixTtf_labels(font, ttf)
         _fixTtf_instances(font, ttf)

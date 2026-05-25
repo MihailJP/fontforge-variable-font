@@ -58,9 +58,8 @@ def _loadLabels(tag: str, lang=None):
     font = fontforge.activeFont()
     assert font is not None
     addr = 'axes.' + tag + '.labels'
-    if label := utils.getVFValue(font, addr):
+    if label := utils.getVFValueAsDict(font, addr):
         text = ''
-        assert isinstance(label, dict)
         for k, v in label.items():
             labelAddr = addr + '.' + str(k).replace('.', ',')  # escape decimal point
             if lang:
@@ -105,7 +104,7 @@ def _prepareQuestions_languages(questions):
     assert font is not None
     languages = set()
     for k, v in designAxes.items():
-        languages |= set(utils.ensureDict(utils.getVFValue(font, 'axes.' + k + '.localNames', {})).keys())
+        languages |= set(utils.getVFValueAsDict(font, 'axes.' + k + '.localNames').keys())
     languages = tuple(languages)
     localNameCategory = len(questions)
     localNameRange = range(1, max(((len(languages) + 7) // 4) * 4, 8)+1)
@@ -165,7 +164,7 @@ def _prepareQuestions_map(questions, k, v):
         'tag': k + 'map',
         'default': ', '.join(list(map(
             lambda x: str(x[0]) + ',' + str(x[1]),
-            utils.ensureList(utils.getVFValue(font, 'axes.' + k + '.map', []))
+            utils.getVFValueAsList(font, 'axes.' + k + '.map')
         ))),
     })
 

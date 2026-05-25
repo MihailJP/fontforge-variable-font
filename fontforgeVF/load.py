@@ -4,7 +4,7 @@ from os import PathLike
 import fontforge
 from fontTools import ttLib
 
-from .utils import intOrFloat, checkExtensionTtfOrWoff2
+from .utils import intOrFloat, checkExtensionTtfOrWoff2, ensureTuple
 from fontforge_plugin_helper import addFontGenerateHook
 
 
@@ -322,10 +322,10 @@ def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: s
     result = fontforge.askChoices(
         'Choose instance(s) to open',
         'Instances in this font',
-        [str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances],  # type: ignore
+        tuple([str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances]),
         multiple=True
-    )  # type: ignore
-    for i in (x[1] for x in zip(result, ttf['fvar'].instances) if x[0]):
+    )
+    for i in (x[1] for x in zip(ensureTuple(result), ttf['fvar'].instances) if x[0]):
         _doOpenVariableFont(filename, i.coordinates, ttf, tmpdir)
 
 

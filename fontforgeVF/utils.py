@@ -40,6 +40,15 @@ def ensureList(obj) -> list:
         return list(obj)
 
 
+def ensureTuple(obj) -> tuple:
+    if obj is None:
+        return ()
+    elif isinstance(obj, tuple):
+        return obj
+    else:
+        return tuple(obj)
+
+
 def ensureDict(obj) -> dict:
     if obj is None:
         return {}
@@ -154,6 +163,34 @@ def getVFValue(font: fontforge.font, key: str, default=None):
             else:
                 info = info[k]
         return info
+
+
+def getVFValueAsList(font: fontforge.font, key: str, default: list = []) -> list:
+    """Gets a value from VF info
+
+    Same as ``getVFValue()`` but ensures returning a list
+
+    :param font: Fontforge font object
+    :param key: Name of key
+    :param default: Optional. Returns this value if ``key`` does not \
+    exist. Without this parameter defaults to ``[]``.
+    :return: the value for ``key``, or ``default`` if no such ``key``.
+    """
+    return ensureList(getVFValue(font, key, default))
+
+
+def getVFValueAsDict(font: fontforge.font, key: str, default: dict = {}) -> dict:
+    """Gets a value from VF info
+
+    Same as ``getVFValue()`` but ensures returning a dict
+
+    :param font: Fontforge font object
+    :param key: Name of key
+    :param default: Optional. Returns this value if ``key`` does not \
+    exist. Without this parameter defaults to ``{}``.
+    :return: the value for ``key``, or ``default`` if no such ``key``.
+    """
+    return ensureDict(getVFValue(font, key, default))
 
 
 def _makeSureKeyExists(container, key):

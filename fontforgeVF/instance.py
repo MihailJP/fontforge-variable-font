@@ -5,8 +5,7 @@ from .design_axes import designAxes
 
 
 def _instances_getval(font: fontforge.font, cnt: int, key: str, defaultVal):
-    instances = utils.getVFValue(font, 'instances', [])
-    assert isinstance(instances, list)
+    instances = utils.getVFValueAsList(font, 'instances')
     if (cnt - 1) < len(instances):
         if isinstance(instances[cnt - 1], dict):
             if key in instances[cnt - 1]:
@@ -61,16 +60,14 @@ def _prepareQuestions_instanceLocalNames(questions: list):
 
     font = fontforge.activeFont()
     assert font is not None
-    instances = utils.getVFValue(font, 'instances', [])
-    assert isinstance(instances, list)
+    instances = utils.getVFValueAsList(font, 'instances')
     numberOfInstances = max(((len(instances) + 7) // 4) * 4, 8)
 
     languages = set()
     numberOfLanguages = 8
     for i in range(len(instances)):
         for k, v in designAxes.items():
-            langdict = utils.getVFValue(font, 'instances[' + str(i) + '].localNames', {})
-            assert isinstance(langdict, dict)
+            langdict = utils.getVFValueAsDict(font, 'instances[' + str(i) + '].localNames')
             languages |= set(langdict.keys())
     languages = tuple(languages)
     numberOfLanguages = max(((len(languages) + 7) // 4) * 4, 8)
@@ -110,8 +107,7 @@ def _prepareQuestions():
     font = fontforge.activeFont()
     assert font is not None
     questions = []
-    instances = utils.getVFValue(font, 'instances', [])
-    assert isinstance(instances, list)
+    instances = utils.getVFValueAsList(font, 'instances')
     numberOfInstances = max(((len(instances) + 7) // 4) * 4, 8)
 
     for i in range(numberOfInstances):
