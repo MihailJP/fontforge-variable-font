@@ -287,10 +287,11 @@ def openVariableFont(
     filetype = checkExtensionTtfOrWoff2(filename)
     with tempfile.TemporaryDirectory() as tmpdir:
         if filetype == 'ttf':
-            _openVF(filename, axisValuesOrInstance, tmpdir)
+            font = _openVF(filename, axisValuesOrInstance, tmpdir)
         else:  # woff2
             ttFile = _woff2Decompress(filename, tmpdir)
-            _openVF(ttFile, axisValuesOrInstance, tmpdir)
+            font = _openVF(ttFile, axisValuesOrInstance, tmpdir)
+    return font
 
 
 def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str | PathLike):
