@@ -4,7 +4,7 @@ import re
 import fontforge
 
 
-def intOrFloat(val):
+def intOrFloat(val: str | int | float):
     """Convert to ``int`` or ``float`` if possible
 
     If parameter represents an integer, returns it converted to ``int``
@@ -29,6 +29,24 @@ def intOrFloat(val):
         return i
     else:
         return f
+
+
+def ensureList(obj) -> list:
+    if obj is None:
+        return []
+    elif isinstance(obj, list):
+        return obj
+    else:
+        return list(obj)
+
+
+def ensureDict(obj) -> dict:
+    if obj is None:
+        return {}
+    elif isinstance(obj, dict):
+        return obj
+    else:
+        return dict(obj)
 
 
 def initPersistentDict(font: fontforge.font):
@@ -123,6 +141,7 @@ def getVFValue(font: fontforge.font, key: str, default=None):
     if not vfInfoExists(font):
         return default
     else:
+        assert isinstance(font.persistent, dict)
         info = font.persistent["VF"]
         for part in _checkVFAddr(key):
             c, k = part
@@ -167,6 +186,7 @@ def setVFValue(font: fontforge.font, key: str, val):
     :raises ``RuntimeError``: user refused ``initPersistentDict``.
     """
     initPersistentDict(font)
+    assert isinstance(font.persistent, dict)
     parent = font.persistent
     info = parent["VF"]
     prevk = "VF"
@@ -188,7 +208,7 @@ def setVFValue(font: fontforge.font, key: str, val):
     parent[k] = val
 
 
-def _deleteEmptyLists(d: dict):
+def _deleteEmptyLists(d: dict | list):
     if isinstance(d, list):
         for i in range(len(d)):
             if isinstance(d[i], dict):
@@ -241,6 +261,7 @@ def deleteVFValue(font: fontforge.font, key: str) -> bool:
     :return: ``True`` if the key was deleted, ``False`` otherwise.
     """
     if vfInfoExists(font):
+        assert isinstance(font.persistent, dict)
         parent = font.persistent
         info = parent["VF"]
         for part in _checkVFAddr(key):

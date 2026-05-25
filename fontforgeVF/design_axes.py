@@ -24,7 +24,7 @@ def _searchCustomAxis(font: fontforge.font, tag: str) -> str | None:
         return tag
     else:
         for k, v in designAxes.items():
-            if k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.tag', '').rstrip() == tag.rstrip():
+            if k.startswith('custom') and str(utils.getVFValue(font, 'axes.' + k + '.tag', '')).rstrip() == tag.rstrip():
                 return k
         return None
 
@@ -56,6 +56,7 @@ def _getFlags(font: fontforge.font, labelAddr: str) -> int:
 
 def _loadLabels(tag: str, lang=None):
     font = fontforge.activeFont()
+    assert font is not None
     addr = 'axes.' + tag + '.labels'
     if label := utils.getVFValue(font, addr):
         text = ''
@@ -64,13 +65,13 @@ def _loadLabels(tag: str, lang=None):
             labelAddr = addr + '.' + str(k).replace('.', ',')  # escape decimal point
             if lang:
                 text += str(k) + ',' + \
-                    utils.getVFValue(font, labelAddr + '.localNames.' + hex(lang), '') + \
+                    str(utils.getVFValue(font, labelAddr + '.localNames.' + hex(lang), '')) + \
                     ', '
             else:
                 text += str(k) + ',' + \
                     str(_getFlags(font, labelAddr)) + \
                     ',' + str(utils.getVFValue(font, labelAddr + '.linkedValue', '')) + \
-                    ',' + utils.getVFValue(font, labelAddr + '.name', '') + \
+                    ',' + str(utils.getVFValue(font, labelAddr + '.name', '')) + \
                     ', '
         return text[:-2]
     elif utils.vfInfoExists(font):
@@ -101,9 +102,10 @@ def _loadLabels(tag: str, lang=None):
 def _prepareQuestions_languages(questions):
     from fontforgeVF.language import getLanguageList
     font = fontforge.activeFont()
+    assert font is not None
     languages = set()
     for k, v in designAxes.items():
-        languages |= set(utils.getVFValue(font, 'axes.' + k + '.localNames', {}).keys())
+        languages |= set(utils.ensureDict(utils.getVFValue(font, 'axes.' + k + '.localNames', {})).keys())
     languages = tuple(languages)
     localNameCategory = len(questions)
     localNameRange = range(1, max(((len(languages) + 7) // 4) * 4, 8)+1)
@@ -116,6 +118,7 @@ def _prepareQuestions_languages(questions):
 
 def _prepareQuestions_values(questions, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     tagStat = 1 if utils.getVFValue(font, 'axes.' + k + '.active', False) else 0
     if tagStat == 1 and not k.startswith('custom') and utils.getVFValue(font, 'axes.' + k + '.useDefault', False):
         tagStat = 2
@@ -155,19 +158,21 @@ def _prepareQuestions_values(questions, k, v):
 
 def _prepareQuestions_map(questions, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     questions[2]["questions"].append({
         'type': 'string',
         'question': v["name"] + ':',
         'tag': k + 'map',
         'default': ', '.join(list(map(
             lambda x: str(x[0]) + ',' + str(x[1]),
-            utils.getVFValue(font, 'axes.' + k + '.map', [])
+            utils.ensureList(utils.getVFValue(font, 'axes.' + k + '.map', []))
         ))),
     })
 
 
 def _prepareQuestions_order(questions, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     questions[3]["questions"].append({
         'type': 'string',
         'question': v["name"] + ':',
@@ -178,6 +183,7 @@ def _prepareQuestions_order(questions, k, v):
 
 def _prepareQuestions_names(questions, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     questions[4]["questions"].append({
         'type': 'string',
         'question': v["name"] + ':',
@@ -198,6 +204,7 @@ def _prepareQuestions_names(questions, k, v):
 
 def _prepareQuestions_localNames(questions, k, v, languages, localNameRange, localNameCategory):
     font = fontforge.activeFont()
+    assert font is not None
     for i in localNameRange:
         questions[localNameCategory + i - 1]["questions"].append({
             'type': 'string',
@@ -217,6 +224,7 @@ def _prepareQuestions_localNames(questions, k, v, languages, localNameRange, loc
 
 def _prepareQuestions_custom(questions, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     if k.startswith('custom'):
         questions[1]["questions"].append({
             'type': 'string',
@@ -249,6 +257,7 @@ def _prepareQuestions():
 # Save result
 def _saveResult_values(result, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     utils.setVFValue(font, 'axes.' + k + '.active', result[k] != 'unset')
     if not k.startswith('custom') and result[k] != 'unset':
         utils.setVFValue(font, 'axes.' + k + '.useDefault', result[k] == 'auto')
@@ -266,6 +275,7 @@ def _saveResult_values(result, k, v):
 
 def _saveResult_labels(result, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     utils.setOrDeleteVFValue(font, 'axes.' + k + '.order', int(result[k + 'order']) if result[k + 'order'] else None)
     utils.deleteVFValue(font, 'axes.' + k + '.labels')
     if result[k + 'labels']:
@@ -276,9 +286,9 @@ def _saveResult_labels(result, k, v):
             val = val.replace('.', ',')  # escape decimal point
             valAddr = 'axes.' + k + '.labels.' + val
             utils.setOrDeleteVFValue(font, valAddr + '.olderSibling',
-                                     None if el == '' else bool(utils.intOrFloat(el) & 1))
+                                     None if el == '' else bool(int(el) & 1))
             utils.setOrDeleteVFValue(font, valAddr + '.elidable',
-                                     None if el == '' else bool(utils.intOrFloat(el) & 2))
+                                     None if el == '' else bool(int(el) & 2))
             utils.setOrDeleteVFValue(font, valAddr + '.linkedValue',
                                      None if lv == '' else utils.intOrFloat(lv))
             utils.setOrDeleteVFValue(font, valAddr + '.name',
@@ -295,6 +305,7 @@ def _saveResult_labels(result, k, v):
 
 def _saveResult_localNames(result, k, v):
     font = fontforge.activeFont()
+    assert font is not None
     utils.setOrDeleteVFValue(font, 'axes.' + k + '.name', result[k + 'name'])
     utils.deleteVFValue(font, 'axes.' + k + '.localNames')
     for i in (x.replace('lang', '') for x in result if x.startswith('lang')):
@@ -417,6 +428,6 @@ def designAxesMenu(u, glyph):
       * Axis value
       * Name
     """
-    result = fontforge.askMulti("Design axes", _prepareQuestions())
+    result = fontforge.askMulti("Design axes", _prepareQuestions())  # type: ignore
     if result:
         _saveResult(result)

@@ -30,7 +30,7 @@ def _axisMinValue(defaultFont: fontforge.font, tag: str, filterItalicRoman: bool
             getAxisValue(f, tag) for f
             in _getSourceFonts(defaultFont, filterItalicRoman)
             if getAxisValue(f, tag) is not None
-        )
+        )  # type: ignore
     )
 
 
@@ -40,7 +40,7 @@ def _axisMaxValue(defaultFont: fontforge.font, tag: str, filterItalicRoman: bool
             getAxisValue(f, tag) for f
             in _getSourceFonts(defaultFont, filterItalicRoman)
             if getAxisValue(f, tag) is not None
-        )
+        )  # type: ignore
     )
 
 
@@ -130,7 +130,7 @@ def _outputUfo(font: fontforge.font, outputDir: str | PathLike, outputFile: str 
     import re
     # import shutil  # for debug
 
-    assert outputFile.endswith('.ufo')
+    assert str(outputFile).endswith('.ufo')
     ufoPath = str(outputDir) + '/' + str(outputFile)
     changed = font.changed
     unlinkRmOvrlpSave = {}
@@ -148,10 +148,10 @@ def _outputUfo(font: fontforge.font, outputDir: str | PathLike, outputFile: str 
         info = _ufoInfo()
         ufo.readInfo(info)
         if _isFixedPitch(font):
-            ufo.postscriptIsFixedPitch = True
-        ufo.styleMapFamilyName = _getFontFamilyName(font)
-        ufo.styleMapStyleName = _getFontSubFamilyName(font)
-        ufo.writeInfo(info)
+            ufo.postscriptIsFixedPitch = True  # type: ignore
+        ufo.styleMapFamilyName = _getFontFamilyName(font)  # type: ignore
+        ufo.styleMapStyleName = _getFontSubFamilyName(font)  # type: ignore
+        ufo.writeInfo(info)  # type: ignore
 
         if _aaltExists(font) or _allGSUBTags(font):
             feat = ufo.readFeatures()
@@ -169,7 +169,7 @@ def _outputUfo(font: fontforge.font, outputDir: str | PathLike, outputFile: str 
             if aaltInclude or existingAalt:
                 newAalt = "feature aalt {\n" + aaltInclude + existingAalt + "} aalt;\n\n"
             feat = re.sub(featPosPattern, newAalt, feat, count=1)
-            ufo.writeFeatures(feat)
+            ufo.writeFeatures(feat)  # type: ignore
 
     font.changed = changed
 
@@ -182,6 +182,7 @@ def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument, filterIt
     # print(_getSourceFonts(font))
     for f in _getSourceFonts(font, filterItalicRoman):
         s = SourceDescriptor()
+        assert isinstance(f.temporary, dict)
         s.path = f.temporary['ufo']
         if f is font:
             s.copyLib = True
@@ -198,7 +199,9 @@ def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument, filterIt
                     if k.startswith('custom') else k
                 name = utils.getVFValue(font, 'axes.' + k + '.name', v['name']) \
                     if k.startswith('custom') else v['name']
-                s.location[name] = getAxisValue(f, tag)
+                assert isinstance(tag, str)
+                assert isinstance(name, str)
+                s.location[name] = getAxisValue(f, tag)  # type: ignore
         s.familyName = _getFontFamilyName(f)
         s.styleName = _getFontSubFamilyName(f)
         doc.addSource(s)
@@ -207,7 +210,7 @@ def _designSpaceSources(font: fontforge.font, doc: DesignSpaceDocument, filterIt
 def _designSpaceAxes_labels(labels, a: AxisDescriptor | DiscreteAxisDescriptor):
     L = []
     for u, d in labels.items():
-        if not (a.minimum <= u <= a.maximum):
+        if not (a.minimum <= u <= a.maximum):  # type: ignore
             fontforge.logWarning('Ignored label {0} = {1} because out of range'.format(
                 a.name, str(u)))
         elif 'name' not in d:
@@ -231,13 +234,14 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument, filterItali
             a = DiscreteAxisDescriptor() if k == 'ital' else AxisDescriptor()
             a.tag = utils.getVFValue(font, 'axes.' + k + '.tag', '????') \
                 if k.startswith('custom') else k
+            assert isinstance(a.tag, str)
             if k == 'ital' and filterItalicRoman is not None:
-                a.minimum = 1 if filterItalicRoman else _axisMinValue(font, a.tag)
-                a.maximum = 0 if not filterItalicRoman else _axisMaxValue(font, a.tag)
+                a.minimum = 1 if filterItalicRoman else _axisMinValue(font, a.tag)  # type: ignore
+                a.maximum = 0 if not filterItalicRoman else _axisMaxValue(font, a.tag)  # type: ignore
             else:
-                a.minimum = _axisMinValue(font, a.tag)
-                a.maximum = _axisMaxValue(font, a.tag)
-            a.default = getAxisValue(font, a.tag)
+                a.minimum = _axisMinValue(font, a.tag)  # type: ignore
+                a.maximum = _axisMaxValue(font, a.tag)  # type: ignore
+            a.default = getAxisValue(font, a.tag)  # type: ignore
             a.name = utils.getVFValue(font, 'axes.' + k + '.name', v['name'])
             if val := utils.getVFValue(font, 'axes.' + k + '.map'):
                 a.map = val
@@ -249,7 +253,9 @@ def _designSpaceAxes(font: fontforge.font, doc: DesignSpaceDocument, filterItali
 
 
 def _designSpaceInstances(font: fontforge.font, doc: DesignSpaceDocument, filterItalicRoman: bool | None = None):
-    for instance in utils.getVFValue(font, 'instances', []):
+    instances = utils.getVFValue(font, 'instances', [])
+    assert isinstance(instances, list)
+    for instance in instances:
         i = InstanceDescriptor()
         i.styleName = instance['name']
         i.postScriptFontName = instance['psName']
@@ -323,6 +329,7 @@ def _fixTtf_axes(font: fontforge.font, ttf: ttLib.TTFont):
         )
         if utils.getVFValue(font, 'axes.' + k + '.active', False):
             localNames = utils.getVFValue(font, 'axes.' + k + '.localNames', {})
+            assert isinstance(localNames, dict)
             for lang, name in localNames.items():
                 axis = [a for a in ttf["fvar"].axes if a.axisTag == tag]
                 if axis:
@@ -341,6 +348,7 @@ def _fixTtf_labels(font: fontforge.font, ttf: ttLib.TTFont):
                 {}
             )
         )
+        assert isinstance(localNames, dict)
         for lang, name in localNames.items():
             ttf['name'].setName(name, axisLabel.ValueNameID, 3, 1, lang)
 
@@ -351,6 +359,7 @@ def _fixTtf_instances(font: fontforge.font, ttf: ttLib.TTFont):
         localNames = utils.getVFValue(
             font, 'instances[' + str(i) + '].localNames', {}
         )
+        assert isinstance(localNames, dict)
         for lang, name in localNames.items():
             ttf['name'].setName(name, subfamilyNameID, 3, 1, lang)
 
@@ -359,6 +368,7 @@ def _fixTtf(font: fontforge.font, filename: str | PathLike):
     with ttLib.TTFont(str(filename)) as ttf:
         for i in font.sfnt_names:
             if i[0] != 'English (US)':
+                assert isinstance(i[0], str)
                 if i[1] in _fields:
                     ttf['name'].setName(i[2], _fields[i[1]], 3, 1, language.languageCodeReverseLookup(i[0]))
         _fixTtf_axes(font, ttf)
@@ -540,7 +550,7 @@ def _exportVariableFont(font: fontforge.font, dialogResult: dict[str, str]):
 
 def _saveMenuDialog(font: fontforge.font) -> dict | None:
     if _hasBothRomanAndItalic(font):
-        questions = [
+        questions: list = [
             {
                 'type': 'savepath', 'question': '_Roman VF:', 'tag': 'file',
                 'default':
@@ -557,7 +567,7 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
             },
         ]
     else:
-        questions = [
+        questions: list = [
             {
                 'type': 'savepath', 'question': '_Save as:', 'tag': 'file',
                 'default':
@@ -580,10 +590,10 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
     return fontforge.askMulti("Save variable font", questions)
 
 
-def saveMenu(u, glyph):
-    if result := _saveMenuDialog(fontforge.activeFont()):
-        _exportVariableFont(fontforge.activeFont(), result)
+def saveMenu(u, font: fontforge.font):
+    if result := _saveMenuDialog(font):
+        _exportVariableFont(font, result)
 
 
-def saveEnable(u, glyph):
-    return utils.vfInfoExists(fontforge.activeFont())
+def saveEnable(u, font: fontforge.font):
+    return utils.vfInfoExists(font)

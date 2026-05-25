@@ -6,6 +6,7 @@ from .design_axes import designAxes
 
 def _instances_getval(font: fontforge.font, cnt: int, key: str, defaultVal):
     instances = utils.getVFValue(font, 'instances', [])
+    assert isinstance(instances, list)
     if (cnt - 1) < len(instances):
         if isinstance(instances[cnt - 1], dict):
             if key in instances[cnt - 1]:
@@ -15,6 +16,7 @@ def _instances_getval(font: fontforge.font, cnt: int, key: str, defaultVal):
 
 def _prepareQuestions_instances(cnt: int):
     font = fontforge.activeFont()
+    assert font is not None
     questions = [
         {
             'type': 'string',
@@ -58,13 +60,18 @@ def _prepareQuestions_instanceLocalNames(questions: list):
     from math import ceil
 
     font = fontforge.activeFont()
-    numberOfInstances = max(((len(utils.getVFValue(font, 'instances', [])) + 7) // 4) * 4, 8)
+    assert font is not None
+    instances = utils.getVFValue(font, 'instances', [])
+    assert isinstance(instances, list)
+    numberOfInstances = max(((len(instances) + 7) // 4) * 4, 8)
 
     languages = set()
     numberOfLanguages = 8
-    for i in range(len(utils.getVFValue(font, 'instances', []))):
+    for i in range(len(instances)):
         for k, v in designAxes.items():
-            languages |= set(utils.getVFValue(font, 'instances[' + str(i) + '].localNames', {}).keys())
+            langdict = utils.getVFValue(font, 'instances[' + str(i) + '].localNames', {})
+            assert isinstance(langdict, dict)
+            languages |= set(langdict.keys())
     languages = tuple(languages)
     numberOfLanguages = max(((len(languages) + 7) // 4) * 4, 8)
 
@@ -101,8 +108,11 @@ def _prepareQuestions_instanceLocalNames(questions: list):
 
 def _prepareQuestions():
     font = fontforge.activeFont()
+    assert font is not None
     questions = []
-    numberOfInstances = max(((len(utils.getVFValue(font, 'instances', [])) + 7) // 4) * 4, 8)
+    instances = utils.getVFValue(font, 'instances', [])
+    assert isinstance(instances, list)
+    numberOfInstances = max(((len(instances) + 7) // 4) * 4, 8)
 
     for i in range(numberOfInstances):
         questions.append({
@@ -116,6 +126,7 @@ def _prepareQuestions():
 
 def _saveInstances(result: dict):
     font = fontforge.activeFont()
+    assert font is not None
     instanceList = []
     cnt = 1
     while 'psName' + str(cnt) in result:

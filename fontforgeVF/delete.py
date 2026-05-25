@@ -13,6 +13,7 @@ def deleteVFInfo(font: fontforge.font) -> bool:
     :return: ``True`` if the key was deleted, ``False`` otherwise.
     """
     if utils.vfInfoExists(font):
+        assert isinstance(font.persistent, dict)
         del font.persistent['VF']
         if len(font.persistent) == 0:
             font.persistent = None
@@ -21,13 +22,13 @@ def deleteVFInfo(font: fontforge.font) -> bool:
         return False
 
 
-def deleteVFInfoMenu(u, glyph):
+def deleteVFInfoMenu(u, font: fontforge.font):
     """Menu emtry to delete VF info from UI
 
     This menu is enabled if active font has VF info.
     """
-    deleteVFInfo(fontforge.activeFont())
+    deleteVFInfo(font)
 
 
-def deleteVFInfoEnable(u, glyph):
-    return utils.vfInfoExists(fontforge.activeFont())
+def deleteVFInfoEnable(u, font: fontforge.font):
+    return utils.vfInfoExists(font)

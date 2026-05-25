@@ -61,7 +61,7 @@ def _denormalize(minimum, default, maximum, value):
 def _getVFData_fvar_axes(ttf: ttLib.TTFont, axisValues: dict[str, int | float], vfData: dict):
     for axis in ttf['fvar'].axes:
         tag = axis.axisTag
-        axisData = {'active': True}
+        axisData: dict[str, str | int | float] = {'active': True}
         if tag in axisValues:
             axisData['useDefault'] = False
             axisData['value'] = intOrFloat(axisValues[tag])
@@ -208,6 +208,7 @@ def _doOpenVariableFont(
         partial.save(instancePath)
     font = fontforge.open(instancePath)
     initPersistentDict(font)
+    assert isinstance(font.persistent, dict)
     font.persistent['VF'] = vfData
     return font
 
@@ -219,12 +220,12 @@ def _openVF(
 ) -> fontforge.font:
     with ttLib.TTFont(filename) as ttf:
         if 'fvar' not in ttf:
-            return fontforge.open(filename)
+            return fontforge.open(str(filename))
         elif isinstance(axisValuesOrInstance, dict):
             if [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
                 return _doOpenVariableFont(filename, axisValuesOrInstance, ttf, tmpdir)
             else:
-                return fontforge.open(filename)
+                return fontforge.open(str(filename))
         elif isinstance(axisValuesOrInstance, int):
             return _doOpenVariableFont(
                 filename,
@@ -312,8 +313,8 @@ def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str
 
     if result := fontforge.askMulti('Please specify an instance to open', questions):
         for key in result:
-            result[key] = intOrFloat(result[key])
-        _doOpenVariableFont(filename, result, ttf, tmpdir)
+            result[key] = intOrFloat(result[key])  # type: ignore
+        _doOpenVariableFont(filename, result, ttf, tmpdir)  # type: ignore
 
 
 def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str | PathLike):
@@ -321,9 +322,9 @@ def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: s
     result = fontforge.askChoices(
         'Choose instance(s) to open',
         'Instances in this font',
-        [str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances],
+        [str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances],  # type: ignore
         multiple=True
-    )
+    )  # type: ignore
     for i in (x[1] for x in zip(result, ttf['fvar'].instances) if x[0]):
         _doOpenVariableFont(filename, i.coordinates, ttf, tmpdir)
 
@@ -368,6 +369,7 @@ def loadMenu(u, glyph):
 def _generatePreHook(font: fontforge.font, target: str):
     from fontforgeVF.utils import vfInfoExists
 
+    assert isinstance(font.temporary, dict)
     changed = font.changed
     if vfInfoExists(font):
         if target.endswith('.ttf') or target.endswith('.woff2'):
@@ -376,7 +378,7 @@ def _generatePreHook(font: fontforge.font, target: str):
                 "This font has variable font metadata in its persistent dict.\n"
                 "Did you intend to output a variable font?\n"
                 "(all masters need to be opened beforehand)",
-                ["_Yes", "_No"],
+                ["_Yes", "_No"],  # type: ignore
             )
             font.temporary['generateVF'] = (ans == 0)
             font.changed = changed
@@ -386,6 +388,7 @@ def _generatePostHook(font: fontforge.font, target: str):
     from fontforgeVF.utils import vfInfoExists
     from fontforgeVF.export import exportVariableFont
 
+    assert isinstance(font.temporary, dict)
     changed = font.changed
     if vfInfoExists(font):
         if 'generateVF' in font.temporary:
@@ -422,13 +425,14 @@ def _loadHook_ttf(font: fontforge.font):
                         "_Yes",
                         "Open with _parameters",
                         "_No",
-                    ]
+                    ]  # type: ignore
                 )
                 if ans == 0 or ans == 1:
                     _selectInstanceDialog(font.path, ttf, ans)
             else:
                 _selectInstanceDialog(font.path, ttf, 1)
             initPersistentDict(font)
+            assert isinstance(font.persistent, dict)
             vfData = _getVFData(ttf, {})
             font.persistent['VF'] = vfData
 

@@ -825,7 +825,7 @@ def getLanguageList(listNumber: int, defaultCode: int | None = None):
     for langId, langCode, langName in sorted(languageCodeIterator(), key=lambda x: x[2]):
         languageList.append({'name': langName, 'tag': hex(langId), 'default': langId == defaultCode})
     questions = {
-        'category': 'Localized names ' + (
+        'category': 'Localized names ' + str(
             languageCodeLookup(defaultCode) if defaultCode else str(listNumber)
         ),
         'questions': [
