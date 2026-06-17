@@ -2,5 +2,6 @@
     "flake8.args": [
         "--max-complexity=10",
         "--max-line-length=127"
-    ]
+    ],
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }
