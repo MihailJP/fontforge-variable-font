@@ -799,7 +799,7 @@ def languageCodeIterator():
             if isinstance(msb, int):
                 winLang = msb * 1024 + lsb
                 for name in subLangData['name']:
-                    yield (winLang, subLangData['code'], name.replace('.', langData['name']))
+                    yield (winLang, subLangData['code'], name.replace('.', langData['name'], 1))
 
 
 def languageCodeLookup(langCode: int) -> str | None:
