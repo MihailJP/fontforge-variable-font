@@ -2,10 +2,11 @@ import faulthandler
 from os import PathLike
 
 import fontforge
+from fontforge_plugin_helper import addFontGenerateHook
 from fontTools import ttLib
 
+from .translation import tr
 from .utils import intOrFloat, checkExtensionTtfOrWoff2, ensureTuple
-from fontforge_plugin_helper import addFontGenerateHook
 
 
 def _checkAxisValue(ttf: ttLib.TTFont, axisValues: dict[str, int | float]):
@@ -311,7 +312,7 @@ def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str
                 },
             )
 
-    if result := fontforge.askMulti('Please specify an instance to open', questions):
+    if result := fontforge.askMulti(tr.get('Please specify an instance to open'), questions):
         for key in result:
             result[key] = intOrFloat(result[key])  # type: ignore
         _doOpenVariableFont(filename, result, ttf, tmpdir)  # type: ignore
@@ -374,11 +375,13 @@ def _generatePreHook(font: fontforge.font, target: str):
     if vfInfoExists(font):
         if target.endswith('.ttf') or target.endswith('.woff2'):
             ans = fontforge.ask(
-                "Variable font",
-                "This font has variable font metadata in its persistent dict.\n"
-                "Did you intend to output a variable font?\n"
-                "(all masters need to be opened beforehand)",
-                ["_Yes", "_No"],  # type: ignore
+                tr.get("Variable font"),
+                tr.get(
+                    "This font has variable font metadata in its persistent dict.\n"
+                    "Did you intend to output a variable font?\n"
+                    "(all masters need to be opened beforehand)"
+                ),
+                [tr.get("_Yes"), tr.get("_No")],  # type: ignore
             )
             font.temporary['generateVF'] = (ans == 0)
             font.changed = changed
@@ -416,15 +419,17 @@ def _loadHook_ttf(font: fontforge.font):
         if 'fvar' in ttf and [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
             if ttf['fvar'].instances:
                 ans = fontforge.ask(
-                    "Variable font",
-                    "The font '" + font.familyname + "' in \n"
-                    "'" + font.path + "'\n"
-                    "seems to be a variable font.\n"
-                    "Would you like to open another instance of this font?",
+                    tr.get("Variable font"),
+                    tr.get(
+                        "The font '{0}' in\n"
+                        "'{1}'\n"
+                        "seems to be a variable font.\n"
+                        "Would you like to open another instance of this font?"
+                    ).format(font.familyname, font.path),
                     [
-                        "_Yes",
-                        "Open with _parameters",
-                        "_No",
+                        tr.get("_Yes"),
+                        tr.get("Open with _parameters"),
+                        tr.get("_No"),
                     ]  # type: ignore
                 )
                 if ans == 0 or ans == 1:

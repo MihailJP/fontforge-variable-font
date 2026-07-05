@@ -2,6 +2,7 @@ import fontforge
 
 from . import utils
 from .design_axes import designAxes
+from .translation import tr
 
 
 def _instances_getval(font: fontforge.font, cnt: int, key: str, defaultVal):
@@ -19,13 +20,13 @@ def _prepareQuestions_instances(cnt: int):
     questions = [
         {
             'type': 'string',
-            'question': 'PostScript Name:',
+            'question': tr.get('PostScript Name:'),
             'tag': 'psName' + str(cnt),
             'default': _instances_getval(font, cnt, 'psName', ''),
         },
         {
             'type': 'string',
-            'question': 'Subfamily Name:',
+            'question': tr.get('Subfamily Name:'),
             'tag': 'name' + str(cnt),
             'default': _instances_getval(font, cnt, 'name', ''),
         },
@@ -36,18 +37,18 @@ def _prepareQuestions_instances(cnt: int):
                 val = _instances_getval(font, cnt, 'ital', False)
                 questions.append({
                     'type': 'choice',
-                    'question': v['name'] + ':',
+                    'question': tr.get(v['name']) + ':',
                     'tag': k + '_' + str(cnt),
                     'checks': True,
                     'answers': [
-                        {'name': 'No', 'tag': '0', 'default': not val},
-                        {'name': 'Yes', 'tag': '1', 'default': val},
+                        {'name': tr.get('No'), 'tag': '0', 'default': not val},
+                        {'name': tr.get('Yes'), 'tag': '1', 'default': val},
                     ],
                 })
             else:
                 questions.append({
                     'type': 'string',
-                    'question': v['name'] + ':',
+                    'question': tr.get(v['name']) + ':',
                     'tag': k + '_' + str(cnt),
                     'default': str(_instances_getval(font, cnt, k, '')),
                 })
@@ -86,7 +87,7 @@ def _prepareQuestions_instanceLocalNames(questions: list):
         for j in range(numberOfInstances):
             page['questions'].append({
                 'type': 'string',
-                'question': _instances_getval(font, j + 1, 'name', 'Instance ' + str(j + 1)),
+                'question': _instances_getval(font, j + 1, 'name', tr.get('Instance {0}').format(str(j + 1))),
                 'tag': 'lang' + str(i + 1) + 'name' + str(j + 1),
                 'default': utils.getVFValue(
                     font, 'instances[' + str(j) + '].localNames.' + str(lang), ''
@@ -112,7 +113,7 @@ def _prepareQuestions():
 
     for i in range(numberOfInstances):
         questions.append({
-            'category': _instances_getval(font, i + 1, 'name', 'Instance ' + str(i + 1)),
+            'category': _instances_getval(font, i + 1, 'name', tr.get('Instance {0}').format(str(i + 1))),
             'questions': _prepareQuestions_instances(i + 1)
         })
 
@@ -174,6 +175,6 @@ def instanceMenu(u, glyph):
     By default there is a room for 8 languages, but this will be
     extended if already more than 4 languages are defined.
     """
-    result = fontforge.askMulti("Named instances", _prepareQuestions())
+    result = fontforge.askMulti(tr.get("Named instances"), _prepareQuestions())
     if result:
         _saveInstances(result)

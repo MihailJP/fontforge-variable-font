@@ -1,3 +1,5 @@
+from .translation import tr
+
 languageData = {
     1: {
         'name': 'Arabic',
@@ -825,13 +827,13 @@ def getLanguageList(listNumber: int, defaultCode: int | None = None):
     for langId, langCode, langName in sorted(languageCodeIterator(), key=lambda x: x[2]):
         languageList.append({'name': langName, 'tag': hex(langId), 'default': langId == defaultCode})
     questions = {
-        'category': 'Localized names ' + str(
+        'category': tr.get('Localized names {0}').format(str(
             languageCodeLookup(defaultCode) if defaultCode else str(listNumber)
-        ),
+        )),
         'questions': [
             {
                 'type': 'choice',
-                'question': 'Language:',
+                'question': tr.get('Language:'),
                 'tag': 'lang' + str(listNumber),
                 'answers': languageList,
             },

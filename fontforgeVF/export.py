@@ -14,6 +14,7 @@ from fontTools.designspaceLib import (
 
 from . import utils, language
 from .design_axes import designAxes, getAxisValue
+from .translation import tr
 
 
 def _getSourceFonts(defaultFont: fontforge.font, filterItalicRoman: bool | None = None) -> list[fontforge.font]:
@@ -431,16 +432,16 @@ def _exportVF(
                 cmd = e.cmd.split(' ')
             fontforge.logWarning(e.stderr)
             fontforge.postError(
-                "Failed to export",
-                "'{0}' failed with return code {1}".format(cmd[0], e.returncode)
+                tr.get("Failed to export"),
+                tr.get("'{0}' failed with return code {1}").format(cmd[0], e.returncode)
             )
         else:
             raise
     else:
         if fontforge.hasUserInterface():
             fontforge.postNotice(
-                "Finished",
-                "Finished to output variable fonts"
+                tr.get("Finished"),
+                tr.get("Finished to output variable fonts"),
             )
 
 
@@ -554,14 +555,14 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
     if _hasBothRomanAndItalic(font):
         questions: list = [
             {
-                'type': 'savepath', 'question': '_Roman VF:', 'tag': 'file',
+                'type': 'savepath', 'question': tr.get('_Roman VF:'), 'tag': 'file',
                 'default':
                     font.default_base_filename + '.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '.ttf',
                 'filter': '*.{ttf,woff2}',
             },
             {
-                'type': 'savepath', 'question': '_Italic VF:', 'tag': 'file2',
+                'type': 'savepath', 'question': tr.get('_Italic VF:'), 'tag': 'file2',
                 'default':
                     font.default_base_filename + '-Italic.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '-Italic.ttf',
@@ -571,7 +572,7 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
     else:
         questions: list = [
             {
-                'type': 'savepath', 'question': '_Save as:', 'tag': 'file',
+                'type': 'savepath', 'question': tr.get('_Save as:'), 'tag': 'file',
                 'default':
                     font.default_base_filename + '.ttf' if font.default_base_filename
                     else '.'.join(font.path.split('.')[:-1]) + '.ttf',
@@ -580,16 +581,16 @@ def _saveMenuDialog(font: fontforge.font) -> dict | None:
         ]
     questions += [
         {
-            'type': 'choice', 'question': 'Options:', 'tag': 'options',
+            'type': 'choice', 'question': tr.get('Options:'), 'tag': 'options',
             'checks': True, 'multiple': True,
             'answers': [
-                {'name': 'Decompose _nested refs', 'tag': 'nestedRefs'},
-                {'name': 'Decompose _transformed refs', 'tag': 'transformedRefs'},
-                {'name': "Add '_aalt' feature", 'tag': 'aalt'},
+                {'name': tr.get('Decompose _nested refs'), 'tag': 'nestedRefs'},
+                {'name': tr.get('Decompose _transformed refs'), 'tag': 'transformedRefs'},
+                {'name': tr.get("Add '_aalt' feature"), 'tag': 'aalt'},
             ],
         },
     ]
-    return fontforge.askMulti("Save variable font", questions)
+    return fontforge.askMulti(tr.get("Save variable font"), questions)
 
 
 def saveMenu(u, font: fontforge.font):

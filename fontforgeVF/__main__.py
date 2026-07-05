@@ -1,66 +1,69 @@
 import fontforge
 
-from fontforgeVF import (
+from fontforge_plugin_helper import addSystemHook
+
+from . import (
     delete,
     design_axes,
     export,
     instance,
-    load
+    load,
 )
-from fontforge_plugin_helper import addSystemHook
+from .translation import tr, setTranslation
 
 
 def fontforge_plugin_init(**kw):
+    setTranslation()
     fontforge.registerMenuItem(
         callback=load.loadMenu,
         enable=None,
         context="Font",
-        submenu=["_Variable Font", '_Open a variable font'],
-        name="By named _instance...",
+        submenu=[tr.get('_Variable Font'), tr.get('_Open a variable font')],
+        name=tr.get('By named _instance...'),
         data=0
     )
     fontforge.registerMenuItem(
         callback=load.loadMenu,
         enable=None,
         context="Font",
-        submenu=["_Variable Font", '_Open a variable font'],
-        name="By _parameter...",
+        submenu=[tr.get('_Variable Font'), tr.get('_Open a variable font')],
+        name=tr.get('By _parameter...'),
         data=1
     )
     fontforge.registerMenuItem(
         callback=export.saveMenu,
         enable=export.saveEnable,
         context="Font",
-        submenu="_Variable Font",
-        name="_Generate a variable font..."
+        submenu=tr.get('_Variable Font'),
+        name=tr.get('_Generate a variable font...')
     )
 
     fontforge.registerMenuItem(
         divider=True,
         context="Font",
-        submenu="_Variable Font",
+        submenu=tr.get('_Variable Font'),
     )
 
     fontforge.registerMenuItem(
         callback=design_axes.designAxesMenu,
         enable=None,
         context="Font",
-        submenu="_Variable Font",
-        name="Design _axes..."
+        submenu=tr.get('_Variable Font'),
+        name=tr.get('Design _axes...')
     )
     fontforge.registerMenuItem(
         callback=instance.instanceMenu,
         enable=None,
         context="Font",
-        submenu="_Variable Font",
-        name="Named _instances..."
+        submenu=tr.get('_Variable Font'),
+        name=tr.get('Named _instances...')
     )
     fontforge.registerMenuItem(
         callback=delete.deleteVFInfoMenu,
         enable=delete.deleteVFInfoEnable,
         context="Font",
-        submenu="_Variable Font",
-        name="_Delete VF info"
+        submenu=tr.get('_Variable Font'),
+        name=tr.get('_Delete VF info')
     )
 
     if fontforge.hasUserInterface:

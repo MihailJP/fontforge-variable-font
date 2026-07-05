@@ -1,6 +1,7 @@
 import fontforge
 
 from . import utils
+from .translation import tr
 
 
 def _getWidthFromOS2Width(font: fontforge.font) -> int | float:
@@ -125,14 +126,14 @@ def _prepareQuestions_values(questions, k, v):
     tagVal = utils.getVFValue(font, 'axes.' + k + '.value', defaultTagVal) if tagStat == 1 else defaultTagVal
     questions[0]["questions"].append({
         'type': 'choice',
-        'question': v["name"] + ':',
+        'question': tr.get(v["name"]) + ':',
         'tag': k,
         'checks': True,
         'answers': [
-            {'name': 'Unset', 'tag': 'unset', 'default': tagStat == 0},
-            {'name': 'Set', 'tag': 'custom', 'default': tagStat == 1},
+            {'name': tr.get('Unset'), 'tag': 'unset', 'default': tagStat == 0},
+            {'name': tr.get('Set'), 'tag': 'custom', 'default': tagStat == 1},
         ] + ([
-            {'name': 'Default (' + str(v["auto"](font)) + ')', 'tag': 'auto', 'default': tagStat == 2},
+            {'name': tr.get('Default ({0})').format(str(v["auto"](font))), 'tag': 'auto', 'default': tagStat == 2},
         ] if v["auto"] else []),
     })
     if k == 'ital':
@@ -142,8 +143,8 @@ def _prepareQuestions_values(questions, k, v):
             'tag': k + 'val',
             'checks': True,
             'answers': [
-                {'name': 'No', 'tag': 'false', 'default': not tagVal},
-                {'name': 'Yes', 'tag': 'true', 'default': tagVal},
+                {'name': tr.get('No'), 'tag': 'false', 'default': not tagVal},
+                {'name': tr.get('Yes'), 'tag': 'true', 'default': tagVal},
             ],
         })
     else:
@@ -160,7 +161,7 @@ def _prepareQuestions_map(questions, k, v):
     assert font is not None
     questions[2]["questions"].append({
         'type': 'string',
-        'question': v["name"] + ':',
+        'question': tr.get(v["name"]) + ':',
         'tag': k + 'map',
         'default': ', '.join(list(map(
             lambda x: str(x[0]) + ',' + str(x[1]),
@@ -174,7 +175,7 @@ def _prepareQuestions_order(questions, k, v):
     assert font is not None
     questions[3]["questions"].append({
         'type': 'string',
-        'question': v["name"] + ':',
+        'question': tr.get(v["name"]) + ':',
         'tag': k + 'order',
         'default': str(utils.getVFValue(font, 'axes.' + k + '.order', '')),
     })
@@ -185,7 +186,7 @@ def _prepareQuestions_names(questions, k, v):
     assert font is not None
     questions[4]["questions"].append({
         'type': 'string',
-        'question': v["name"] + ':',
+        'question': tr.get(v["name"]) + ':',
         'tag': k + 'name',
         'default': utils.getVFValue(
             font,
@@ -195,7 +196,7 @@ def _prepareQuestions_names(questions, k, v):
     })
     questions[4]["questions"].append({
         'type': 'string',
-        'question': '\tLabels:',
+        'question': tr.get('\tLabels:'),
         'tag': k + 'labels',
         'default': _loadLabels(k),
     })
@@ -207,7 +208,7 @@ def _prepareQuestions_localNames(questions, k, v, languages, localNameRange, loc
     for i in localNameRange:
         questions[localNameCategory + i - 1]["questions"].append({
             'type': 'string',
-            'question': v["name"] + ':',
+            'question': tr.get(v["name"]) + ':',
             'tag': k + 'name' + str(i),
             'default': utils.getVFValue(
                 font, 'axes.' + k + '.localNames.' + hex(languages[i-1]), ''
@@ -215,7 +216,7 @@ def _prepareQuestions_localNames(questions, k, v, languages, localNameRange, loc
         })
         questions[localNameCategory + i - 1]["questions"].append({
             'type': 'string',
-            'question': '\tLabels:',
+            'question': tr.get('\tLabels:'),
             'tag': k + 'labels' + str(i),
             'default': _loadLabels(k, languages[i-1]) if i <= len(languages) else '',
         })
@@ -227,7 +228,7 @@ def _prepareQuestions_custom(questions, k, v):
     if k.startswith('custom'):
         questions[1]["questions"].append({
             'type': 'string',
-            'question': v["name"] + ' tag:',
+            'question': tr.get('{0} tag:').format(tr.get(v["name"])),
             'tag': k + 'tag',
             'default': utils.getVFValue(font, 'axes.' + k + '.tag', ''),
         })
@@ -235,11 +236,11 @@ def _prepareQuestions_custom(questions, k, v):
 
 def _prepareQuestions():
     questions = [
-        {'category': 'This master', 'questions': []},
-        {'category': 'Custom axes', 'questions': []},
-        {'category': 'Axis map',    'questions': []},
-        {'category': 'Axis order',  'questions': []},
-        {'category': 'Axis names',  'questions': []},
+        {'category': tr.get('This master'), 'questions': []},
+        {'category': tr.get('Custom axes'), 'questions': []},
+        {'category': tr.get('Axis map'),    'questions': []},
+        {'category': tr.get('Axis order'),  'questions': []},
+        {'category': tr.get('Axis names'),  'questions': []},
     ]
 
     languages, localNameCategory, localNameRange = _prepareQuestions_languages(questions)
@@ -427,6 +428,6 @@ def designAxesMenu(u, glyph):
       * Axis value
       * Name
     """
-    result = fontforge.askMulti("Design axes", _prepareQuestions())  # type: ignore
+    result = fontforge.askMulti(tr.get("Design axes"), _prepareQuestions())  # type: ignore
     if result:
         _saveResult(result)

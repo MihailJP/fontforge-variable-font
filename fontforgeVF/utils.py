@@ -3,6 +3,8 @@ import re
 
 import fontforge
 
+from .translation import tr
+
 
 def intOrFloat(val: str | int | float):
     """Convert to ``int`` or ``float`` if possible
@@ -77,10 +79,12 @@ def initPersistentDict(font: fontforge.font):
         fontforge.logWarning("Non-dict `font.persistent` will be lost")
         if fontforge.hasUserInterface():
             if fontforge.ask(
-                "Data loss warning",
-                "In active font, `font.persistent` exists but is other than a dict.\n"
-                "This will be overwritten if you continue.",
-                ("_OK", "_Cancel"), 0, 1
+                tr.get("Data loss warning"),
+                tr.get(
+                    "In active font, `font.persistent` exists but is other than a dict.\n"
+                    "This will be overwritten if you continue."
+                ),
+                (tr.get("_OK"), tr.get("_Cancel")), 0, 1
             ) == 1:
                 raise RuntimeError("user refused to delete existing `font.persistent`")
         font.persistent = {}
