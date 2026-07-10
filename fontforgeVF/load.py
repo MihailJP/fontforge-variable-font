@@ -321,8 +321,8 @@ def _setParameterDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str
 def _chooseInstanceDialog(filename: str | PathLike, ttf: ttLib.TTFont, tmpdir: str | PathLike):
     assert 'fvar' in ttf
     result = fontforge.askChoices(
-        'Choose instance(s) to open',
-        'Instances in this font',
+        tr.get('Choose instance(s) to open'),
+        tr.get('Instances in this font'),
         tuple([str(ttf['name'].getName(i.subfamilyNameID, 3, 1, 0x409)) for i in ttf['fvar'].instances]),
         multiple=True
     )
@@ -354,15 +354,15 @@ def loadMenu(u, glyph):
     non-variable font is selected, simply opens that font.
     """
     faulthandler.enable()
-    if filename := fontforge.openFilename('Open a variable font', '', '*.{ttf,woff2}'):
+    if filename := fontforge.openFilename(tr.get('Open a variable font'), '', '*.{ttf,woff2}'):
         with ttLib.TTFont(filename) as ttf:
             if 'fvar' not in ttf:
-                fontforge.logWarning(filename + " does not have 'fvar' table")
+                fontforge.logWarning(tr.get("{0} does not have 'fvar' table".format(filename)))
                 fontforge.open(filename)
             elif [axis for axis in ttf['fvar'].axes if axis.minValue != axis.maxValue]:
                 _selectInstanceDialog(filename, ttf, u)
             else:
-                fontforge.logWarning(filename + " has 'fvar' table but all axes are fixed")
+                fontforge.logWarning(tr.get("{0} has 'fvar' table but all axes are fixed").format(filename))
                 fontforge.open(filename)
     faulthandler.disable()
 

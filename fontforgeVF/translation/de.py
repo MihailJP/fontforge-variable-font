@@ -67,6 +67,9 @@ translation_de = {
     'Please specify an instance to open': 'Bitte geben Sie eine Instanz an, die geöffnet werden soll',
     'Choose instance(s) to open': 'Wählen Sie die zu öffnende(n) Instanz(en) aus',
     'Instances in this font': 'Instanzen in dieser Schrift',
+    'Open a variable font': 'Eine Variable Schrift öffnen',
+    "{0} does not have 'fvar' table": "{0} enthält keine „fvar“-Tabelle.",
+    "{0} has 'fvar' table but all axes are fixed": "{0} enthält eine „fvar“-Tabelle, aber alle Achsen sind fest eingestellt.",
     'Variable font': 'Variable Schrift',
     (
         'This font has variable font metadata in its persistent dict.\n'

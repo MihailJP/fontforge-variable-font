@@ -67,6 +67,9 @@ translation_ja = {
     'Please specify an instance to open': '開くインスタンスを指定してください',
     'Choose instance(s) to open': '開くインスタンスを選択してください',
     'Instances in this font': 'フォントに含まれるインスタンス',
+    'Open a variable font': '可変フォントを開く',
+    "{0} does not have 'fvar' table": "{0} には 'fvar' テーブルがありません",
+    "{0} has 'fvar' table but all axes are fixed": "{0} には 'fvar' テーブルがありますがすべての軸が固定されています",
     'Variable font': '可変フォント',
     (
         'This font has variable font metadata in its persistent dict.\n'

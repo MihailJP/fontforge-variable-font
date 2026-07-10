@@ -67,6 +67,9 @@ translation_fr = {
     'Please specify an instance to open': 'Veuillez spécifier une instance à ouvrir',
     'Choose instance(s) to open': 'Choisir la ou les instances à ouvrir',
     'Instances in this font': 'L\'instances dans cette fonte',
+    'Open a variable font': 'Ouvrir une fonte variable',
+    "{0} does not have 'fvar' table": "{0} ne possède pas de table «\u00a0fvar\u00a0»",
+    "{0} has 'fvar' table but all axes are fixed": "{0} possède une table «\u00a0fvar\u00a0», mais tous les axes sont fixes.",
     'Variable font': 'Fonte variable',
     (
         'This font has variable font metadata in its persistent dict.\n'

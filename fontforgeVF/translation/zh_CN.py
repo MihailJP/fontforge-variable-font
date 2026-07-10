@@ -67,6 +67,9 @@ translation_zh_CN = {
     'Please specify an instance to open': '请指定要打开的实例。',
     'Choose instance(s) to open': '选择要打开的实例',
     'Instances in this font': '此字体的实例',
+    'Open a variable font': '打开可变字体',
+    "{0} does not have 'fvar' table": "{0} 没有 'fvar' 列表",
+    "{0} has 'fvar' table but all axes are fixed": "{0} 包含 ‘fvar’ 列表，但所有轴均已固定",
     'Variable font': '可变字体',
     (
         'This font has variable font metadata in its persistent dict.\n'
