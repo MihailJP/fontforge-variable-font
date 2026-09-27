@@ -1,2 +1,3 @@
 fonttools
-fontforge_plugin_helper
+fontmake
+fontforge_plugin_helper >= 0.3.0
